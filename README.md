@@ -5,6 +5,8 @@ Unnoficial Bicicas is a nonprofit android application, that allows users to chec
 
 Note that some aspects of the puslished application, such as api endpoints or pin generation library are not available on this repository. That decission is made with the only aim of keeping things "secure" and to avoid legal issues (please, if someone wants to ~scare~ contact me because is not happy about this nonprofit project, that only aims to help people and does not involve any security risk, please, contact via email).
 
+<img src="https://github.com/VBelles/bicicas-app/blob/master/media/pin.png" width="30%"></img> <img src="https://github.com/VBelles/bicicas-app/blob/master/media/list.png" width="30%"></img> <img src="https://github.com/VBelles/bicicas-app/blob/master/media/map.png" width="30%"></img> 
+
 ## Prerequisites
 * Latest Android Studio Canary version
 * A local.properties file in the root of the project including these properties: 

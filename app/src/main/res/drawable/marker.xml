@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:drawable="@drawable/marker_shadow"
+        android:gravity="center" />
+
+    <item
+        android:id="@+id/marker"
+        android:drawable="@drawable/marker_background"
+        android:gravity="center" />
+
+    <item
+        android:bottom="6dp"
+        android:drawable="@drawable/marker_bike"
+        android:gravity="center"
+        android:left="-1dp" />
+
+    <item
+        android:id="@+id/electric"
+        android:drawable="@drawable/marker_electric"
+        android:gravity="left|top"
+        android:left="0dp"
+        android:top="0dp" />
+
+    <item
+        android:id="@+id/fav"
+        android:drawable="@drawable/marker_fav"
+        android:gravity="right|top"
+        android:right="3dp"
+        android:top="1dp" />
+
+</layer-list>

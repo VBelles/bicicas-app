@@ -1,0 +1,116 @@
+package com.tcn.bicicas.ui.stations.map
+
+import android.os.Bundle
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.MapView
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.MarkerOptions
+import com.tcn.bicicas.R
+
+@Composable
+fun rememberMapViewWithLifecycle(): MapView {
+    val context = LocalContext.current
+    val mapView = remember {
+        MapViewHorizontalScrollFixed(context).apply { id = R.id.map }
+    }
+
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, mapView) {
+        // Make MapView follow the current lifecycle
+        val lifecycleObserver = getMapLifecycleObserver(mapView)
+        lifecycle.addObserver(lifecycleObserver)
+        onDispose {
+            lifecycle.removeObserver(lifecycleObserver)
+        }
+    }
+
+    return mapView
+}
+
+private fun getMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
+    LifecycleEventObserver { _, event ->
+        when (event) {
+            Lifecycle.Event.ON_CREATE -> mapView.onCreate(Bundle())
+            Lifecycle.Event.ON_START -> mapView.onStart()
+            Lifecycle.Event.ON_RESUME -> mapView.onResume()
+            Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+            Lifecycle.Event.ON_STOP -> mapView.onStop()
+            Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+            else -> throw IllegalStateException()
+        }
+    }
+
+
+class MapMarkerAdapter<T> {
+
+    @Immutable
+    data class MarkerData<T>(val marker: Marker, val icon: BitmapDescriptor?, val item: T)
+
+    private var markers = hashMapOf<String, MarkerData<T>>()
+
+    fun submit(
+        googleMap: GoogleMap,
+        items: List<T>,
+        key: (T) -> String,
+        onBind: (T) -> MarkerOptions
+    ) {
+        val currentMarkers = hashMapOf<String, MarkerData<T>>()
+
+        // Update existent and create new markers
+        items.forEach { item ->
+            val itemKey = key(item)
+            val markerData = markers[itemKey]
+            if (markerData != null) {
+                val (marker, icon, prevItem) = markerData
+                if (prevItem != item) {
+                    val options = onBind(item)
+
+                    if (marker.title != options.title) {
+                        marker.title = options.title
+                    }
+
+                    if (marker.position != options.position) {
+                        marker.position = options.position
+                    }
+
+                    if (marker.snippet != options.snippet) {
+                        marker.snippet = options.snippet
+                    }
+
+                    if (icon != options.icon) {
+                        marker.setIcon(options.icon)
+                    }
+                    currentMarkers[itemKey] = MarkerData(marker, icon, item)
+                } else {
+                    currentMarkers[itemKey] = markerData
+                }
+            } else {
+                val options = onBind(item)
+                val newMarker = googleMap.addMarker(options)!!
+                currentMarkers[itemKey] = MarkerData(newMarker, options.icon, item)
+            }
+        }
+
+        // Remove unused markers
+        markers.forEach { (key, markerData) ->
+            if (!currentMarkers.containsKey(key)) {
+                markerData.marker.remove()
+            }
+        }
+        markers.clear()
+        markers = currentMarkers
+    }
+
+    fun getMarker(itemId: String?): Marker? = markers[itemId]?.marker
+
+    fun getMarkerItem(marker: Marker): T? = markers.values.find { it.marker.id == marker.id }?.item
+}

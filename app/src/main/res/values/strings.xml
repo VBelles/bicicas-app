@@ -22,6 +22,9 @@
     <string name="settings_option_bottom_bar">Barra inferior (Por defecto)</string>
     <string name="settings_option_tabs">Pestañas</string>
     <string name="settings_title">Ajustes</string>
+    <string name="settings_title_credits">Créditos</string>
+    <string name="settings_item_licenses">Licencias</string>
+    <string name="settings_item_subtitle_licenses">Licencias de código abierto de librerias usadas por la aplicación</string>
 
     <!--Pin-->
     <string name="pin_welcome_message">Para poder disfrutar de esta funcionalidad es necesario iniciar sesión con sus credenciales</string>

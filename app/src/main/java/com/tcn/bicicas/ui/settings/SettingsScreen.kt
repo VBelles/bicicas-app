@@ -3,7 +3,11 @@ package com.tcn.bicicas.ui.settings
 import android.content.Context
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectableGroup
@@ -24,6 +28,7 @@ import com.google.accompanist.insets.navigationBarsHeight
 import com.google.accompanist.insets.systemBarsPadding
 import com.tcn.bicicas.R
 import com.tcn.bicicas.data.model.Settings
+import com.tcn.bicicas.ui.settings.licenses.LicensesScreen
 import com.tcn.bicicas.ui.theme.BarHeight
 import com.tcn.bicicas.ui.theme.BarTonalElevation
 import org.koin.androidx.compose.getViewModel
@@ -54,20 +59,31 @@ private fun SettingsScreen(
 ) {
     BackHandler(onBack = onBackClicked)
     val scrollState = rememberScrollState()
-    Column(
-        modifier = Modifier
-            .background(MaterialTheme.colorScheme.background)
-            .fillMaxSize()
-    ) {
-        SettingsTopAppBar(onBackClicked, scrollState.value > 10)
-        SettingsList(
-            settings = settings,
-            scrollState = scrollState,
-            onInitialScreenChanged = onInitialScreenChanged,
-            onThemeChanged = onThemeChanged,
-            onNavigationTypeChanged = onNavigationTypeChanged,
-            onDynamicColorEnabled = onDynamicColorEnabled
-        )
+    var licensesOpened by rememberSaveable { mutableStateOf(false) }
+    Box {
+        Column(
+            modifier = Modifier
+                .background(MaterialTheme.colorScheme.background)
+                .fillMaxSize()
+        ) {
+            SettingsTopAppBar(onBackClicked, scrollState.value > 10)
+            SettingsList(
+                settings = settings,
+                scrollState = scrollState,
+                onInitialScreenChanged = onInitialScreenChanged,
+                onThemeChanged = onThemeChanged,
+                onNavigationTypeChanged = onNavigationTypeChanged,
+                onDynamicColorEnabled = onDynamicColorEnabled,
+                onLicensesClicked = { licensesOpened = true }
+            )
+        }
+        AnimatedVisibility(
+            visible = licensesOpened,
+            enter = slideInVertically(tween()) { it },
+            exit = slideOutVertically(tween()) { it },
+        ) {
+            LicensesScreen { licensesOpened = false }
+        }
     }
 }
 
@@ -79,66 +95,104 @@ private fun SettingsList(
     onThemeChanged: (Int) -> Unit,
     onNavigationTypeChanged: (Int) -> Unit,
     onDynamicColorEnabled: (Boolean) -> Unit,
+    onLicensesClicked: () -> Unit,
 ) {
-    val context = LocalContext.current
     Column(
         modifier = Modifier
             .verticalScroll(scrollState)
             .systemBarsPadding(top = false, bottom = false)
     ) {
         Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.settings_title_theme),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-        SettingItemSelectBetween(
-            title = stringResource(R.string.settings_item_theme),
-            options = Settings.Theme.values().map { getThemeName(context, it) },
-            selectedOption = settings.theme.ordinal,
-            onOptionSelected = onThemeChanged,
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            SettingItemToggle(
-                title = stringResource(R.string.settings_item_dynamic_color),
-                subtitle = stringResource(R.string.settings_item_subtitle_dynamic_color),
-                enabled = settings.dynamicColorEnabled,
-                onToggle = onDynamicColorEnabled,
-            )
-        }
+        ThemeSection(settings, onThemeChanged, onDynamicColorEnabled)
 
         Divider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(18.dp))
+        NavigationSection(settings, onInitialScreenChanged, onNavigationTypeChanged)
 
-        Text(
-            text = stringResource(R.string.settings_title_navigation),
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 24.dp)
-        )
-
-        SettingItemSelectBetween(
-            title = stringResource(R.string.settings_item_initial_screen),
-            options = Settings.Screen.values().map { getScreenName(context, it) },
-            selectedOption = settings.initialScreen.ordinal,
-            onOptionSelected = onInitialScreenChanged,
-        )
-
-        SettingItemSelectBetween(
-            title = stringResource(R.string.settings_item_navigation_type),
-            options = Settings.NavigationType.values().map { getNavigationTypeName(context, it) },
-            selectedOption = settings.navigationType.ordinal,
-            onOptionSelected = onNavigationTypeChanged,
-        )
-
+        Divider(modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(18.dp))
+        CreditsSection(onLicensesClicked)
 
         Spacer(modifier = Modifier.navigationBarsHeight(12.dp))
     }
 }
 
-fun getScreenName(context: Context, screen: Settings.Screen) = when (screen) {
+@Composable
+private fun ThemeSection(
+    settings: Settings,
+    onThemeChanged: (Int) -> Unit,
+    onDynamicColorEnabled: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    Text(
+        text = stringResource(R.string.settings_title_theme),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp)
+    )
+    SettingItemSelectBetween(
+        title = stringResource(R.string.settings_item_theme),
+        options = Settings.Theme.values().map { getThemeName(context, it) },
+        selectedOption = settings.theme.ordinal,
+        onOptionSelected = onThemeChanged,
+    )
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        SettingItemToggle(
+            title = stringResource(R.string.settings_item_dynamic_color),
+            subtitle = stringResource(R.string.settings_item_subtitle_dynamic_color),
+            enabled = settings.dynamicColorEnabled,
+            onToggle = onDynamicColorEnabled,
+        )
+    }
+}
+
+@Composable
+fun NavigationSection(
+    settings: Settings,
+    onInitialScreenChanged: (Int) -> Unit,
+    onNavigationTypeChanged: (Int) -> Unit
+) {
+    val context = LocalContext.current
+    Text(
+        text = stringResource(R.string.settings_title_navigation),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp)
+    )
+
+    SettingItemSelectBetween(
+        title = stringResource(R.string.settings_item_initial_screen),
+        options = Settings.Screen.values().map { getScreenName(context, it) },
+        selectedOption = settings.initialScreen.ordinal,
+        onOptionSelected = onInitialScreenChanged,
+    )
+
+    SettingItemSelectBetween(
+        title = stringResource(R.string.settings_item_navigation_type),
+        options = Settings.NavigationType.values()
+            .map { getNavigationTypeName(context, it) },
+        selectedOption = settings.navigationType.ordinal,
+        onOptionSelected = onNavigationTypeChanged,
+    )
+}
+
+@Composable
+fun CreditsSection(onLicensesClicked: () -> Unit) {
+    Text(
+        text = stringResource(R.string.settings_title_credits),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 24.dp)
+    )
+    SettingItem(
+        title = stringResource(R.string.settings_item_licenses),
+        subtitle = stringResource(R.string.settings_item_subtitle_licenses),
+        onClick = onLicensesClicked
+    )
+}
+
+private fun getScreenName(context: Context, screen: Settings.Screen) = when (screen) {
     Settings.Screen.Pin -> context.getString(R.string.settings_option_pin)
     Settings.Screen.Stations -> context.getString(R.string.settings_option_stations)
     Settings.Screen.Map -> context.getString(R.string.settings_option_map)

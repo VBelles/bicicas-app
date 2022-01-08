@@ -70,26 +70,25 @@ class MapMarkerAdapter<T> {
             val itemKey = key(item)
             val markerData = markers[itemKey]
             if (markerData != null) {
-                val (marker, icon, prevItem) = markerData
-                if (prevItem != item) {
+                if (markerData.item != item) {
                     val options = onBind(item)
 
-                    if (marker.title != options.title) {
-                        marker.title = options.title
+                    if (markerData.marker.title != options.title) {
+                        markerData.marker.title = options.title
                     }
 
-                    if (marker.position != options.position) {
-                        marker.position = options.position
+                    if (markerData.marker.position != options.position) {
+                        markerData.marker.position = options.position
                     }
 
-                    if (marker.snippet != options.snippet) {
-                        marker.snippet = options.snippet
+                    if (markerData.marker.snippet != options.snippet) {
+                        markerData.marker.snippet = options.snippet
                     }
 
-                    if (icon != options.icon) {
-                        marker.setIcon(options.icon)
+                    if (markerData.icon != options.icon) {
+                        markerData.marker.setIcon(options.icon)
                     }
-                    currentMarkers[itemKey] = MarkerData(marker, icon, item)
+                    currentMarkers[itemKey] = MarkerData(markerData.marker, options.icon, item)
                 } else {
                     currentMarkers[itemKey] = markerData
                 }

@@ -25,6 +25,9 @@
     <string name="settings_title_credits">Créditos</string>
     <string name="settings_item_licenses">Licencias</string>
     <string name="settings_item_subtitle_licenses">Licencias de código abierto de librerias usadas por la aplicación</string>
+    <string name="settings_item_version">Versión de la aplicación</string>
+    <string name="settings_item_credits_url">https://github.com/VBelles/bicicas-app</string>
+    <string name="settings_item_credits_author">por Vicent Bellés</string>
 
     <!--Pin-->
     <string name="pin_welcome_message">Para poder disfrutar de esta funcionalidad es necesario iniciar sesión con sus credenciales</string>

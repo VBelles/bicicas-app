@@ -2,6 +2,7 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
+    id 'com.mikepenz.aboutlibraries.plugin'
 }
 
 android {
@@ -93,6 +94,11 @@ dependencies {
 
     // Encryption
     implementation 'org.jasypt:jasypt:1.9.3'
+
+    // OS Licenses
+    implementation 'com.mikepenz:aboutlibraries-core:10.0.0-b07'
+    implementation 'com.mikepenz:aboutlibraries-compose:10.0.0-b07'
+
 
     // If PIN_GENERATOR_LIB_PATH is not found then a dummy library is used for pin generation
     Properties properties = new Properties()

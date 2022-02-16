@@ -1,5 +1,5 @@
 # Unnoficial Bicicas App
-This project is the continuation of Unnoficial Bicicas app from 2017. It contains the source code of the playstore application (publication pending to be approved) and it will help to track bugs and new features to implement.
+This project is the continuation of Unnoficial Bicicas app from 2017. It contains the source code of the [playstore application](https://play.google.com/store/apps/details?id=com.tcn.bicicas) and it will help to track bugs and new features to implement.
 
 Unnoficial Bicicas is a nonprofit android application, that allows users to check Bicicas benches availability and to unlock bycicles with the generated pin.
 

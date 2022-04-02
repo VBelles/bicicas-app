@@ -20,20 +20,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onPlaced
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.rememberInsetsPaddingValues
-import com.google.accompanist.insets.systemBarsPadding
 import com.tcn.bicicas.BuildConfig
 import com.tcn.bicicas.R
 import com.tcn.bicicas.data.model.Settings
@@ -96,7 +88,6 @@ private fun SettingsScreen(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun SettingsList(
     settings: Settings,
@@ -107,49 +98,30 @@ private fun SettingsList(
     onDynamicColorEnabled: (Boolean) -> Unit,
     onLicensesClicked: () -> Unit,
 ) {
-    BoxWithConstraints {
-        val maxHeight = maxHeight
-        Column(
-            modifier = Modifier
-                .verticalScroll(scrollState)
-                .systemBarsPadding(top = false, bottom = false)
-        ) {
-            Spacer(modifier = Modifier.height(12.dp))
-            ThemeSection(settings, onThemeChanged, onDynamicColorEnabled)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(scrollState)
+            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
+    ) {
+        Spacer(modifier = Modifier.height(12.dp))
+        ThemeSection(settings, onThemeChanged, onDynamicColorEnabled)
 
-            Divider(modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(18.dp))
-            NavigationSection(settings, onInitialScreenChanged, onNavigationTypeChanged)
+        Divider(modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(18.dp))
+        NavigationSection(settings, onInitialScreenChanged, onNavigationTypeChanged)
 
-            Divider(modifier = Modifier.fillMaxWidth())
-            Spacer(modifier = Modifier.height(18.dp))
-            CreditsSection(onLicensesClicked)
+        Divider(modifier = Modifier.fillMaxWidth())
+        Spacer(modifier = Modifier.height(18.dp))
+        CreditsSection(onLicensesClicked)
 
-            // Footer is placed filling the remaining space between the last item and the bottom
-            // visible area with at least 24.dp of space
-
-            val density = LocalDensity.current
-            var lastItemY by remember { mutableStateOf(0.dp) }
-            var creditsHeight by remember { mutableStateOf(0.dp) }
-
-            Box(modifier = Modifier.onPlaced {
-                lastItemY = with(density) { it.positionInParent().y.toDp() }
-            })
-
-            val bottomPadding = rememberInsetsPaddingValues(
-                LocalWindowInsets.current.navigationBars, applyTop = false
-            ).calculateBottomPadding() + 12.dp
-
-            val remainSpace = maxHeight - lastItemY - creditsHeight - bottomPadding
-            Spacer(modifier = Modifier.height((remainSpace).coerceAtLeast(18.dp)))
-
-            Footer(Modifier
+        Spacer(modifier = Modifier.weight(1f))
+        Footer(
+            Modifier
                 .fillMaxWidth()
-                .onSizeChanged { creditsHeight = with(density) { it.height.toDp() } }
-                .padding(horizontal = 24.dp))
-
-            Spacer(modifier = Modifier.height(bottomPadding))
-        }
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .navigationBarsPadding()
+        )
     }
 }
 
@@ -384,7 +356,7 @@ private fun SettingsTopAppBar(onBackClicked: () -> Unit, elevated: Boolean) {
     Surface(tonalElevation = elevation) {
         Box(
             modifier = Modifier
-                .systemBarsPadding(bottom = false)
+                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
                 .height(BarHeight)
                 .padding(horizontal = 8.dp)
                 .fillMaxWidth()

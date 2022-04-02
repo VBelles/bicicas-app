@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapView
@@ -55,7 +56,6 @@ import com.tcn.bicicas.ui.theme.LocalDarkTheme
 import com.tcn.bicicas.ui.theme.LowAvailabilityColor
 import com.tcn.bicicas.ui.theme.NoAvailabilityColor
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import org.koin.androidx.compose.getViewModel
 
 
@@ -89,6 +89,7 @@ fun MapScreen(
         contentPadding = contentPadding,
         onFavoriteClicked = onFavoriteClicked,
     )
+    //MapComponent()
 }
 
 @Composable
@@ -169,7 +170,7 @@ fun LocationPermissionButton(
 ) {
     // Request location permission
     val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
-    if (!permissionState.hasPermission) {
+    if (!permissionState.status.isGranted) {
         Box(modifier = modifier
             .padding(12.dp)
             .size(40.dp)
@@ -190,10 +191,10 @@ fun LocationPermissionButton(
 
     // When permission is granted and app is active to avoid problems with collecting location on
     // background
-    LaunchedEffect(mapView, permissionState.hasPermission, activeFlow) {
+    LaunchedEffect(mapView, permissionState.status.isGranted, activeFlow) {
         activeFlow.collect { active ->
             @SuppressLint("MissingPermission")
-            mapView.awaitMap().isMyLocationEnabled = permissionState.hasPermission && active
+            mapView.awaitMap().isMyLocationEnabled = permissionState.status.isGranted && active
         }
     }
 }

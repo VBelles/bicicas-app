@@ -67,10 +67,9 @@ dependencies {
     implementation 'androidx.activity:activity-compose:1.4.0'
 
     // Compose extensions
-    def accompanist_version = "0.23.1"
+    def accompanist_version = "0.24.5-alpha"
     implementation "com.google.accompanist:accompanist-swiperefresh:$accompanist_version"
     implementation "com.google.accompanist:accompanist-permissions:$accompanist_version"
-    implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
     implementation "com.google.accompanist:accompanist-pager:$accompanist_version"
     implementation "com.google.accompanist:accompanist-pager-indicators:$accompanist_version"
     implementation "com.google.accompanist:accompanist-systemuicontroller:$accompanist_version"

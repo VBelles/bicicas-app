@@ -20,11 +20,8 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,8 +30,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.rememberInsetsPaddingValues
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import com.tcn.bicicas.R
 import com.tcn.bicicas.ui.components.outlinedTextFieldColorsMaterial3
 
@@ -60,32 +57,24 @@ fun LoginDialog(
     )
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun LoginContent(
     loginError: PinState.LoginError?,
     isLoading: Boolean,
     onLoginClicked: (String, String) -> Unit
 ) {
-    val density = LocalDensity.current
-    var contentBottom by remember { mutableStateOf(0.dp) }
-    val maxVisibleBottom = LocalConfiguration.current.screenHeightDp.dp -
-            rememberInsetsPaddingValues(insets = LocalWindowInsets.current.ime).calculateBottomPadding() - 12.dp
 
-    // Calculate padding to allow to scroll to last element of the column when
-    val bottomPadding =
-        if (contentBottom > maxVisibleBottom) contentBottom - maxVisibleBottom else 0.dp
+    val window = (LocalView.current.parent as DialogWindowProvider).window
+    LaunchedEffect(Unit) {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
-            .onGloballyPositioned {
-                with(density) { contentBottom = it.boundsInWindow().bottom.toDp() }
-            }
             .verticalScroll(rememberScrollState())
-            .padding(bottom = bottomPadding)
-
+            .imePadding()
     ) {
 
         val (username, setUsername) = rememberSaveable { mutableStateOf("") }
@@ -106,7 +95,6 @@ private fun LoginContent(
                 null -> ""
             },
             textAlign = TextAlign.Center
-
         )
 
         OutlinedButton(

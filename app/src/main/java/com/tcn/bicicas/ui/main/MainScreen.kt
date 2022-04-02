@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.Tab
 import androidx.compose.material.TabRow
 import androidx.compose.material.TabRowDefaults
@@ -26,10 +25,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.navigationBarsHeight
-import com.google.accompanist.insets.rememberInsetsPaddingValues
-import com.google.accompanist.insets.systemBarsPadding
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.pagerTabIndicatorOffset
@@ -42,7 +37,6 @@ import com.tcn.bicicas.ui.stations.map.MapScreen
 import com.tcn.bicicas.ui.theme.BarHeight
 import com.tcn.bicicas.ui.theme.BarTonalElevation
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 data class Screen(
@@ -141,8 +135,7 @@ fun TabsScreen(
             }
         }
 
-        val contentPadding =
-            rememberInsetsPaddingValues(LocalWindowInsets.current.navigationBars, applyTop = false)
+        val contentPadding = WindowInsets.navigationBars.asPaddingValues()
         HorizontalPager(count = screens.size, state = pagerState) { page ->
             screens[page].content(contentPadding)
         }
@@ -159,11 +152,8 @@ fun BottomBarScreen(
 ) {
     var selectedScreen by rememberSaveable { mutableStateOf(initialScreen) }
 
-    val contentPadding = rememberInsetsPaddingValues(
-        LocalWindowInsets.current.navigationBars,
-        applyTop = false,
-        applyBottom = false
-    )
+    val contentPadding = WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
+        .asPaddingValues()
 
     LaunchedEffect(navigateToMapEvent) {
         navigateToMapEvent.collect {
@@ -184,32 +174,23 @@ fun BottomBarScreen(
             }
         }
 
-        Surface(tonalElevation = BarTonalElevation, shadowElevation = 10.dp) {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .height(60.dp)
-                        .fillMaxWidth()
-                        .selectableGroup()
-                        .systemBarsPadding(bottom = false, top = false),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    screens.forEachIndexed { index, screen ->
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = null) },
-                            //label = { Text(screen.title) },
-                            selected = selectedScreen == index,
-                            onClick = { selectedScreen = index },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                                indicatorColor = MaterialTheme.colorScheme.primary
-                            )
+        Surface(
+            tonalElevation = BarTonalElevation,
+            shadowElevation = 10.dp,
+        ) {
+            BottomAppBar(tonalElevation = 0.dp, modifier = Modifier.navigationBarsPadding()) {
+                screens.forEachIndexed { index, screen ->
+                    NavigationBarItem(
+                        icon = { Icon(screen.icon, contentDescription = null) },
+                        selected = selectedScreen == index,
+                        onClick = { selectedScreen = index },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                            indicatorColor = MaterialTheme.colorScheme.primary
                         )
-                    }
+                    )
                 }
-                Spacer(modifier = Modifier.navigationBarsHeight())
             }
-
         }
     }
 }
@@ -222,7 +203,7 @@ private fun ApplicationTopBar(onSettingsClick: () -> Unit) {
     ) {
         Box(
             modifier = Modifier
-                .systemBarsPadding(bottom = false)
+                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))
                 .height(BarHeight)
                 .padding(horizontal = 8.dp)
                 .fillMaxWidth()

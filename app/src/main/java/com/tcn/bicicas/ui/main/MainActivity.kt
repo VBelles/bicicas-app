@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
-import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.tcn.bicicas.data.model.Settings
 import com.tcn.bicicas.ui.settings.SettingsScreen
@@ -29,8 +28,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-        super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        super.onCreate(savedInstanceState)
 
         setContent {
             val settingsViewModel: SettingsViewModel = getViewModel()
@@ -55,22 +54,20 @@ class MainActivity : ComponentActivity() {
             }
 
             Theme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
-                ProvideWindowInsets {
-                    Surface {
-                        MainScreen(
-                            settings.navigationType,
-                            settings.initialScreen.ordinal,
-                            stationsViewModel.navigateToMapEvent
-                        ) {
-                            settingsOpened = true
-                        }
-                        AnimatedVisibility(
-                            visible = settingsOpened,
-                            enter = slideInVertically(tween()) { it },
-                            exit = slideOutVertically(tween()) { it },
-                        ) {
-                            SettingsScreen { settingsOpened = false }
-                        }
+                Surface {
+                    MainScreen(
+                        settings.navigationType,
+                        settings.initialScreen.ordinal,
+                        stationsViewModel.navigateToMapEvent
+                    ) {
+                        settingsOpened = true
+                    }
+                    AnimatedVisibility(
+                        visible = settingsOpened,
+                        enter = slideInVertically(tween()) { it },
+                        exit = slideOutVertically(tween()) { it },
+                    ) {
+                        SettingsScreen { settingsOpened = false }
                     }
                 }
             }

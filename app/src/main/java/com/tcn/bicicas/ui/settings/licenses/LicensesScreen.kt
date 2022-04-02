@@ -11,9 +11,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.rememberInsetsPaddingValues
-import com.google.accompanist.insets.systemBarsPadding
 import com.mikepenz.aboutlibraries.ui.compose.LibrariesContainer
 import com.tcn.bicicas.R
 import com.tcn.bicicas.ui.theme.BarHeight
@@ -45,11 +42,11 @@ fun LicensesScreen(onBackClicked: () -> Unit) {
                     isLight = !LocalDarkTheme.current
                 )
             ) {
+                val contentPadding =
+                    WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)
+                        .asPaddingValues()
                 LibrariesContainer(
-                    contentPadding = rememberInsetsPaddingValues(
-                        insets = LocalWindowInsets.current.systemBars,
-                        applyTop = false
-                    ),
+                    contentPadding = contentPadding,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -62,7 +59,7 @@ private fun LicensesTopAppBar(onBackClicked: () -> Unit) {
     Surface(tonalElevation = BarTonalElevation) {
         Box(
             modifier = Modifier
-                .systemBarsPadding(bottom = false)
+                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
                 .height(BarHeight)
                 .padding(horizontal = 8.dp)
                 .fillMaxWidth()

@@ -12,10 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.IconButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -35,6 +32,7 @@ import com.tcn.bicicas.data.model.Station
 import com.tcn.bicicas.ui.station
 import com.tcn.bicicas.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StationItem(
     station: Station,
@@ -55,6 +53,7 @@ fun StationItem(
     val borderWidthPx = with(LocalDensity.current) { borderWidth.toPx() }
     val isDarkTheme = LocalDarkTheme.current
     Surface(
+        selected = false,
         tonalElevation = if (isDarkTheme) 1.dp else 0.dp,
         shadowElevation = if (opacity == 1f) 3.dp else 0.dp,
         shape = RoundedCornerShape(12.dp),

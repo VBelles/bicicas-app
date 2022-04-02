@@ -40,7 +40,7 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion compose_compiler_version
+        kotlinCompilerExtensionVersion compose_version
     }
     packagingOptions {
         resources {
@@ -52,22 +52,22 @@ android {
 dependencies {
 
     implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.core:core-splashscreen:1.0.0-alpha02'
+    implementation 'androidx.core:core-splashscreen:1.0.0-beta02'
 
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0'
-    implementation 'androidx.lifecycle:lifecycle-process:2.4.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1'
+    implementation 'androidx.lifecycle:lifecycle-process:2.4.1'
 
     // Compose
     implementation "androidx.compose.foundation:foundation:$compose_version"
     implementation "androidx.compose.ui:ui:$compose_version"
-    implementation 'androidx.compose.material3:material3:1.0.0-alpha02'
+    implementation 'androidx.compose.material3:material3:1.0.0-alpha08'
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
     implementation 'androidx.activity:activity-compose:1.4.0'
 
     // Compose extensions
-    def accompanist_version = "0.22.0-rc"
+    def accompanist_version = "0.23.1"
     implementation "com.google.accompanist:accompanist-swiperefresh:$accompanist_version"
     implementation "com.google.accompanist:accompanist-permissions:$accompanist_version"
     implementation "com.google.accompanist:accompanist-insets:$accompanist_version"
@@ -76,7 +76,7 @@ dependencies {
     implementation "com.google.accompanist:accompanist-systemuicontroller:$accompanist_version"
 
     // Dependency injection
-    def koin_version = "3.1.4"
+    def koin_version = "3.1.5"
     implementation "io.insert-koin:koin-android:$koin_version"
     implementation "io.insert-koin:koin-androidx-compose:$koin_version"
     testImplementation "io.insert-koin:koin-test:$koin_version"
@@ -96,8 +96,8 @@ dependencies {
     implementation 'org.jasypt:jasypt:1.9.3'
 
     // OS Licenses
-    implementation 'com.mikepenz:aboutlibraries-core:10.0.0-b07'
-    implementation 'com.mikepenz:aboutlibraries-compose:10.0.0-b07'
+    implementation 'com.mikepenz:aboutlibraries-core:10.0.1'
+    implementation 'com.mikepenz:aboutlibraries-compose:10.0.1'
 
 
     // If PIN_GENERATOR_LIB_PATH is not found then a dummy library is used for pin generation

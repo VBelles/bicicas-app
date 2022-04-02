@@ -34,7 +34,6 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.tcn.bicicas.R
 import com.tcn.bicicas.data.model.Settings
 import com.tcn.bicicas.ui.pin.PinScreen
@@ -51,7 +50,6 @@ data class Screen(
     val content: @Composable (PaddingValues) -> Unit
 )
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MainScreen(
     navigationType: Settings.NavigationType,

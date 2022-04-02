@@ -143,9 +143,6 @@ private fun SettingsList(
             val remainSpace = maxHeight - lastItemY - creditsHeight - bottomPadding
             Spacer(modifier = Modifier.height((remainSpace).coerceAtLeast(18.dp)))
 
-            println("LastItemY $lastItemY - creditsHeight $creditsHeight - maxHeight $maxHeight - bottomPadding $bottomPadding")
-
-
             Footer(Modifier
                 .fillMaxWidth()
                 .onSizeChanged { creditsHeight = with(density) { it.height.toDp() } }
@@ -279,6 +276,7 @@ private fun getNavigationTypeName(context: Context, navigationType: Settings.Nav
         Settings.NavigationType.Tabs -> context.getString(R.string.settings_option_tabs)
     }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingItem(
     title: String,
@@ -286,7 +284,7 @@ private fun SettingItem(
     onClick: () -> Unit,
     endIcon: @Composable RowScope.() -> Unit = {}
 ) {
-    Surface(onClick = onClick) {
+    Surface(selected = false, onClick = onClick) {
         Row(
             Modifier
                 .fillMaxWidth()
@@ -311,6 +309,7 @@ private fun SettingItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingItemSelectBetween(
     title: String,

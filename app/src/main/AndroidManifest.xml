@@ -16,7 +16,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Bicicas"
+        android:theme="@style/Theme.App.Starting"
         tools:targetApi="31">
 
         <meta-data
@@ -27,7 +27,6 @@
             android:name=".ui.main.MainActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|keyboard|locale|uiMode"
             android:exported="true"
-            android:theme="@style/Theme.Bicicas"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

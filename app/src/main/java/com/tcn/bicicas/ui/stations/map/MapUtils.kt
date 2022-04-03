@@ -2,12 +2,7 @@ package com.tcn.bicicas.ui.stations.map
 
 import android.content.Context
 import android.os.Bundle
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.android.gms.maps.GoogleMap
@@ -15,7 +10,6 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.tcn.bicicas.R
 
 
 data class MapState<T>(
@@ -38,26 +32,6 @@ data class MapState<T>(
     }
 }
 
-@Composable
-fun rememberMapViewWithLifecycle(): MapView {
-    val context = LocalContext.current
-    val mapView = remember {
-        MapViewHorizontalScrollFixed(context).apply { id = R.id.map }
-    }
-
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(lifecycle, mapView) {
-        // Make MapView follow the current lifecycle
-        val lifecycleObserver = getMapLifecycleObserver(mapView)
-        lifecycle.addObserver(lifecycleObserver)
-        onDispose {
-            lifecycle.removeObserver(lifecycleObserver)
-        }
-    }
-
-    return mapView
-}
-
 fun getMapLifecycleObserver(
     mapView: MapView,
     savedInstanceState: Bundle? = null
@@ -69,10 +43,9 @@ fun getMapLifecycleObserver(
         Lifecycle.Event.ON_PAUSE -> mapView.onPause()
         Lifecycle.Event.ON_STOP -> mapView.onStop()
         Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
-        else -> throw IllegalStateException()
+        Lifecycle.Event.ON_ANY -> Unit // Do Nothing
     }
 }
-
 
 class MapMarkerAdapter<T> {
 

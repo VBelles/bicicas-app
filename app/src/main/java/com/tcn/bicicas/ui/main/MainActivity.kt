@@ -22,7 +22,6 @@ import com.tcn.bicicas.data.model.Settings
 import com.tcn.bicicas.data.model.Station
 import com.tcn.bicicas.ui.settings.SettingsScreen
 import com.tcn.bicicas.ui.settings.SettingsViewModel
-import com.tcn.bicicas.ui.stations.StationsViewModel
 import com.tcn.bicicas.ui.stations.map.MapMarkerAdapter
 import com.tcn.bicicas.ui.stations.map.MapState
 import com.tcn.bicicas.ui.theme.Theme
@@ -41,7 +40,6 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val settingsViewModel: SettingsViewModel = getViewModel()
-            val stationsViewModel: StationsViewModel = getViewModel()
             val settings by settingsViewModel.settingsState.collectAsState()
 
             val darkTheme = settings.theme == Settings.Theme.Dark
@@ -63,11 +61,7 @@ class MainActivity : ComponentActivity() {
 
             Theme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
                 Surface {
-                    MainScreen(
-                        settings.initialScreen.ordinal,
-                        stationsViewModel.navigateToMapEvent,
-                        mapState
-                    ) {
+                    MainScreen(settings.initialScreen.ordinal, mapState) {
                         settingsOpened = true
                     }
                     AnimatedVisibility(

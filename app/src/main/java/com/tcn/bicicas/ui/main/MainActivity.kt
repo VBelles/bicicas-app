@@ -17,10 +17,14 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.tcn.bicicas.R
 import com.tcn.bicicas.data.model.Settings
+import com.tcn.bicicas.data.model.Station
 import com.tcn.bicicas.ui.settings.SettingsScreen
 import com.tcn.bicicas.ui.settings.SettingsViewModel
 import com.tcn.bicicas.ui.stations.StationsViewModel
+import com.tcn.bicicas.ui.stations.map.MapMarkerAdapter
+import com.tcn.bicicas.ui.stations.map.MapState
 import com.tcn.bicicas.ui.theme.Theme
 import org.koin.androidx.compose.getViewModel
 
@@ -30,6 +34,10 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
+
+        val mapState = MapState.create(
+            this, lifecycle, savedInstanceState, MapMarkerAdapter<Station>(), R.id.map
+        )
 
         setContent {
             val settingsViewModel: SettingsViewModel = getViewModel()
@@ -56,9 +64,9 @@ class MainActivity : ComponentActivity() {
             Theme(darkTheme = darkTheme, dynamicColor = dynamicColor) {
                 Surface {
                     MainScreen(
-                        settings.navigationType,
                         settings.initialScreen.ordinal,
-                        stationsViewModel.navigateToMapEvent
+                        stationsViewModel.navigateToMapEvent,
+                        mapState
                     ) {
                         settingsOpened = true
                     }

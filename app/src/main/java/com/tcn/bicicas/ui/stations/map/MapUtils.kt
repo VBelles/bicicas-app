@@ -1,5 +1,6 @@
 package com.tcn.bicicas.ui.stations.map
 
+import android.content.Context
 import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -15,6 +16,27 @@ import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.tcn.bicicas.R
+
+
+data class MapState<T>(
+    val mapView: MapView,
+    val markerAdapter: MapMarkerAdapter<T>,
+    val icons: MutableMap<Any, BitmapDescriptor>
+) {
+    companion object {
+        fun <T> create(
+            context: Context,
+            lifecycle: Lifecycle,
+            savedInstanceState: Bundle?,
+            markerAdapter: MapMarkerAdapter<T>,
+            mapId: Int,
+        ): MapState<T> {
+            val mapView = MapViewHorizontalScrollFixed(context).apply { id = mapId }
+            lifecycle.addObserver(getMapLifecycleObserver(mapView, savedInstanceState))
+            return MapState(mapView, markerAdapter, hashMapOf())
+        }
+    }
+}
 
 @Composable
 fun rememberMapViewWithLifecycle(): MapView {
@@ -36,18 +58,20 @@ fun rememberMapViewWithLifecycle(): MapView {
     return mapView
 }
 
-private fun getMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
-    LifecycleEventObserver { _, event ->
-        when (event) {
-            Lifecycle.Event.ON_CREATE -> mapView.onCreate(Bundle())
-            Lifecycle.Event.ON_START -> mapView.onStart()
-            Lifecycle.Event.ON_RESUME -> mapView.onResume()
-            Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-            Lifecycle.Event.ON_STOP -> mapView.onStop()
-            Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
-            else -> throw IllegalStateException()
-        }
+fun getMapLifecycleObserver(
+    mapView: MapView,
+    savedInstanceState: Bundle? = null
+): LifecycleEventObserver = LifecycleEventObserver { _, event ->
+    when (event) {
+        Lifecycle.Event.ON_CREATE -> mapView.onCreate(savedInstanceState)
+        Lifecycle.Event.ON_START -> mapView.onStart()
+        Lifecycle.Event.ON_RESUME -> mapView.onResume()
+        Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+        Lifecycle.Event.ON_STOP -> mapView.onStop()
+        Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+        else -> throw IllegalStateException()
     }
+}
 
 
 class MapMarkerAdapter<T> {

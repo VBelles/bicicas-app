@@ -60,7 +60,7 @@ import org.koin.androidx.compose.getViewModel
 
 
 @Composable
-fun MapScreen(contentPadding: PaddingValues) {
+fun MapScreen(contentPadding: PaddingValues, mapState: MapState<Station>) {
     val viewModel: StationsViewModel = getViewModel()
     val stationsState by viewModel.state.collectAsState()
 
@@ -69,7 +69,8 @@ fun MapScreen(contentPadding: PaddingValues) {
         activeFlow = viewModel.activeFlow,
         navigateToStationEvent = viewModel.navigateToMapEvent,
         contentPadding = contentPadding,
-        onFavoriteClicked = viewModel::onFavoriteClicked
+        onFavoriteClicked = viewModel::onFavoriteClicked,
+        mapState = mapState,
     )
 }
 
@@ -80,7 +81,8 @@ fun MapScreen(
     activeFlow: Flow<Boolean>,
     navigateToStationEvent: Flow<String>,
     contentPadding: PaddingValues,
-    onFavoriteClicked: (String) -> Unit
+    onFavoriteClicked: (String) -> Unit,
+    mapState: MapState<Station>,
 ) {
     StationsMap(
         stations = stationsState.stations,
@@ -88,8 +90,8 @@ fun MapScreen(
         navigateToStationEvent = navigateToStationEvent,
         contentPadding = contentPadding,
         onFavoriteClicked = onFavoriteClicked,
+        mapState = mapState,
     )
-    //MapComponent()
 }
 
 @Composable
@@ -98,9 +100,9 @@ fun StationsMap(
     activeFlow: Flow<Boolean>,
     navigateToStationEvent: Flow<String>,
     contentPadding: PaddingValues,
-    onFavoriteClicked: (String) -> Unit
+    onFavoriteClicked: (String) -> Unit,
+    mapState: MapState<Station>,
 ) {
-    val mapView = rememberMapViewWithLifecycle()
 
     var selectedStationId: String? by rememberSaveable { mutableStateOf(null) }
 
@@ -115,12 +117,12 @@ fun StationsMap(
     var mapPadding: PaddingValues by remember(contentPadding) { mutableStateOf(contentPadding) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        MapViewContainer(mapView, mapPadding, stations, navigateToStationEvent) { id ->
+        MapViewContainer(mapState, mapPadding, stations, navigateToStationEvent) { id ->
             selectedStationId = id
         }
 
         LocationPermissionButton(
-            mapView = mapView,
+            mapView = mapState.mapView,
             activeFlow = activeFlow,
             modifier = Modifier
                 .padding(mapPadding)
@@ -250,22 +252,23 @@ data class MarkerKey(val availabilityColor: Int, val favorite: Boolean, val hasE
 
 @Composable
 fun MapViewContainer(
-    map: MapView,
+    mapState: MapState<Station>,
     padding: PaddingValues,
     stations: List<Station>,
     navigateToStationEvent: Flow<String>,
     onStationSelected: (String?) -> Unit
 ) {
 
+    val map = mapState.mapView
+    val cachedIcons = mapState.icons
+    val markersAdapter = mapState.markerAdapter
     val context = LocalContext.current
-    val markersAdapter = remember { MapMarkerAdapter<Station>() }
-    val cachedIcons = remember { hashMapOf<MarkerKey, BitmapDescriptor>() }
 
     // Update markers given stations
     LaunchedEffect(map, stations) {
         val googleMap = map.awaitMap()
 
-        markersAdapter.submit(googleMap, stations, Station::id) { station ->
+        mapState.markerAdapter.submit(googleMap, stations, Station::id) { station ->
             val hasElectric = station.electricBikesAvailable > 0
             markerOptions {
                 title(station.name)
@@ -319,9 +322,7 @@ fun MapViewContainer(
         val googleMap = map.awaitMap()
         googleMap.uiSettings.setAllGesturesEnabled(true)
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(39.9887138, -0.04635), 13.1f))
-        googleMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style))
     }
-
 
     // Handle navigation to station
     LaunchedEffect(navigateToStationEvent) {

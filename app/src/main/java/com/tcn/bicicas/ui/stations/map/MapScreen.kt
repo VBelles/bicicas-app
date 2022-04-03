@@ -1,7 +1,6 @@
 package com.tcn.bicicas.ui.stations.map
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import android.graphics.Bitmap
@@ -37,10 +36,8 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapView
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.android.gms.maps.model.*
+import com.google.maps.android.compose.*
 import com.google.maps.android.ktx.awaitAnimateCamera
 import com.google.maps.android.ktx.awaitMap
 import com.google.maps.android.ktx.model.markerOptions
@@ -100,7 +97,7 @@ fun StationsMap(
     contentPadding: PaddingValues,
     onFavoriteClicked: (String) -> Unit
 ) {
-    val mapView = rememberMapViewWithLifecycle()
+    //val mapView = rememberMapViewWithLifecycle()
 
     var selectedStationId: String? by rememberSaveable { mutableStateOf(null) }
 
@@ -115,16 +112,21 @@ fun StationsMap(
     var mapPadding: PaddingValues by remember(contentPadding) { mutableStateOf(contentPadding) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        MapViewContainer(mapView, mapPadding, stations, navigateToStationEvent) { id ->
+        /*MapViewContainer(mapView, mapPadding, stations, navigateToStationEvent) { id ->
+            selectedStationId = id
+        }*/
+
+
+        var locationActive by remember { mutableStateOf(false) }
+        MapContent(mapPadding, locationActive, stations, navigateToStationEvent) { id ->
             selectedStationId = id
         }
-
         LocationPermissionButton(
-            mapView = mapView,
             activeFlow = activeFlow,
             modifier = Modifier
                 .padding(mapPadding)
-                .align(Alignment.TopEnd)
+                .align(Alignment.TopEnd),
+            onLocationActive = { active -> locationActive = active }
         )
 
         if (isPortrait) {
@@ -164,9 +166,9 @@ fun StationsMap(
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun LocationPermissionButton(
-    mapView: MapView,
     activeFlow: Flow<Boolean>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLocationActive: (Boolean) -> Unit
 ) {
     // Request location permission
     val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
@@ -191,10 +193,9 @@ fun LocationPermissionButton(
 
     // When permission is granted and app is active to avoid problems with collecting location on
     // background
-    LaunchedEffect(mapView, permissionState.status.isGranted, activeFlow) {
+    LaunchedEffect(permissionState.status.isGranted, activeFlow) {
         activeFlow.collect { active ->
-            @SuppressLint("MissingPermission")
-            mapView.awaitMap().isMyLocationEnabled = permissionState.status.isGranted && active
+            onLocationActive(permissionState.status.isGranted && active)
         }
     }
 }
@@ -247,6 +248,71 @@ private fun LandscapeStationDetails(
 }
 
 data class MarkerKey(val availabilityColor: Int, val favorite: Boolean, val hasElectric: Boolean)
+
+@Composable
+fun MapContent(
+    contentPadding: PaddingValues,
+    locationActive: Boolean,
+    stations: List<Station>,
+    navigateToStationEvent: Flow<String>,
+    onStationSelected: (String?) -> Unit,
+) {
+    val cachedIcons = remember { hashMapOf<MarkerKey, BitmapDescriptor>() }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(LatLng(39.9887138, -0.04635), 13.1f)
+    }
+
+    val markerStates = remember(stations) {
+        stations.map { station -> MarkerState(LatLng(station.latitude, station.longitude)) }
+    }
+
+    GoogleMap(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = contentPadding,
+        cameraPositionState = cameraPositionState,
+        properties = MapProperties(isMyLocationEnabled = locationActive),
+        uiSettings = MapUiSettings(),
+        onMapClick = { onStationSelected(null) }
+    ) {
+        val context = LocalContext.current
+        stations.forEachIndexed { index, station ->
+            val hasElectric = station.electricBikesAvailable > 0
+            val availabilityColor = when (station.bikesAvailable) {
+                0 -> NoAvailabilityColor
+                in 0..4 -> LowAvailabilityColor
+                else -> HighAvailabilityColor
+            }.toArgb()
+            val markerKey = MarkerKey(availabilityColor, station.favorite, hasElectric)
+            val icon = cachedIcons.getOrPut(markerKey) {
+                BitmapDescriptorFactory.fromBitmap(buildMarkerBitmap(context, markerKey))
+            }
+            val snippetIcon = if (hasElectric) " ⚡" else ""
+            val snippet = "${station.bikesAvailable} / ${station.anchors.size}$snippetIcon"
+            val title = "${station.id} - ${station.name}"
+            Marker(
+                state = markerStates[index],
+                icon = icon,
+                title = title,
+                snippet = snippet,
+                onClick = {
+                    onStationSelected(station.id)
+                    false
+                })
+        }
+    }
+
+    LaunchedEffect(navigateToStationEvent, stations) {
+        navigateToStationEvent.collect { stationId ->
+            val stationIndex = stations.indexOfFirst { station -> station.id == stationId }
+            val markerState = markerStates[stationIndex]
+            markerState.showInfoWindow()
+            onStationSelected(stationId)
+            val cameraUpdate = CameraUpdateFactory.newLatLngZoom(markerState.position, 14F)
+            cameraPositionState.animate(cameraUpdate)
+        }
+    }
+}
+
 
 @Composable
 fun MapViewContainer(

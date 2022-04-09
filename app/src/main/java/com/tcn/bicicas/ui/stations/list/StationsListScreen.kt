@@ -40,7 +40,6 @@ import kotlinx.coroutines.flow.emptyFlow
 fun StationScreen(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: StationsViewModel,
-    onMapClicked: (String) -> Unit
 ) {
     val stationsState: StationsState by viewModel.state.collectAsState()
     StationsScreen(
@@ -49,10 +48,7 @@ fun StationScreen(
         errorEvent = viewModel.errorEvent,
         onRefresh = viewModel::onRefresh,
         onFavoriteClicked = viewModel::onFavoriteClicked,
-        onMapClicked = { stationId ->
-            viewModel.onMapClicked(stationId)
-            onMapClicked(stationId)
-        },
+        onMapClicked = viewModel::onMapClicked,
     )
 }
 

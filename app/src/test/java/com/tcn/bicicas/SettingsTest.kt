@@ -43,6 +43,9 @@ class SettingsTest {
             settingsViewModel.onThemeChanged(Settings.Theme.Dark.ordinal)
             assertEquals(Settings.Theme.Dark, awaitItem().theme)
 
+            settingsViewModel.onNavigationTypeChanged(Settings.NavigationType.Tabs.ordinal)
+            assertEquals(Settings.NavigationType.Tabs, awaitItem().navigationType)
+
             settingsViewModel.onDynamicColorEnabled(true)
             assertEquals(true, awaitItem().dynamicColorEnabled)
         }

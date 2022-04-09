@@ -43,6 +43,7 @@ fun SettingsScreen(onBackClicked: () -> Unit) {
         settings = settings,
         onInitialScreenChanged = viewModel::onInitialScreenChanged,
         onThemeChanged = viewModel::onThemeChanged,
+        onNavigationTypeChanged = viewModel::onNavigationTypeChanged,
         onDynamicColorEnabled = viewModel::onDynamicColorEnabled,
         onBackClicked = onBackClicked,
     )
@@ -53,6 +54,7 @@ private fun SettingsScreen(
     settings: Settings,
     onInitialScreenChanged: (Int) -> Unit,
     onThemeChanged: (Int) -> Unit,
+    onNavigationTypeChanged: (Int) -> Unit,
     onDynamicColorEnabled: (Boolean) -> Unit,
     onBackClicked: () -> Unit
 ) {
@@ -71,6 +73,7 @@ private fun SettingsScreen(
                 scrollState = scrollState,
                 onInitialScreenChanged = onInitialScreenChanged,
                 onThemeChanged = onThemeChanged,
+                onNavigationTypeChanged = onNavigationTypeChanged,
                 onDynamicColorEnabled = onDynamicColorEnabled,
                 onLicensesClicked = { licensesOpened = true }
             )
@@ -91,6 +94,7 @@ private fun SettingsList(
     scrollState: ScrollState,
     onInitialScreenChanged: (Int) -> Unit,
     onThemeChanged: (Int) -> Unit,
+    onNavigationTypeChanged: (Int) -> Unit,
     onDynamicColorEnabled: (Boolean) -> Unit,
     onLicensesClicked: () -> Unit,
 ) {
@@ -105,7 +109,7 @@ private fun SettingsList(
 
         Divider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(18.dp))
-        NavigationSection(settings, onInitialScreenChanged)
+        NavigationSection(settings, onInitialScreenChanged, onNavigationTypeChanged)
 
         Divider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(18.dp))
@@ -155,6 +159,7 @@ private fun ThemeSection(
 fun NavigationSection(
     settings: Settings,
     onInitialScreenChanged: (Int) -> Unit,
+    onNavigationTypeChanged: (Int) -> Unit
 ) {
     val context = LocalContext.current
     Text(
@@ -169,6 +174,14 @@ fun NavigationSection(
         options = Settings.Screen.values().map { getScreenName(context, it) },
         selectedOption = settings.initialScreen.ordinal,
         onOptionSelected = onInitialScreenChanged,
+    )
+
+    SettingItemSelectBetween(
+        title = stringResource(R.string.settings_item_navigation_type),
+        options = Settings.NavigationType.values()
+            .map { getNavigationTypeName(context, it) },
+        selectedOption = settings.navigationType.ordinal,
+        onOptionSelected = onNavigationTypeChanged,
     )
 }
 
@@ -228,6 +241,12 @@ private fun getThemeName(context: Context, theme: Settings.Theme) = when (theme)
     Settings.Theme.Light -> context.getString(R.string.settings_option_light)
     Settings.Theme.Dark -> context.getString(R.string.settings_option_dark)
 }
+
+private fun getNavigationTypeName(context: Context, navigationType: Settings.NavigationType) =
+    when (navigationType) {
+        Settings.NavigationType.BottomBar -> context.getString(R.string.settings_option_bottom_bar)
+        Settings.NavigationType.Tabs -> context.getString(R.string.settings_option_tabs)
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

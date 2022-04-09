@@ -17,6 +17,12 @@ class SettingsViewModel(
         )
     }
 
+    fun onNavigationTypeChanged(option: Int) {
+        settingsRepository.update(
+            settingsState.value.copy(navigationType = Settings.NavigationType.values()[option])
+        )
+    }
+
     fun onThemeChanged(option: Int) {
         settingsRepository.update(settingsState.value.copy(theme = Settings.Theme.values()[option]))
     }

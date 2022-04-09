@@ -45,7 +45,7 @@ fun PinScreen(
 }
 
 @Composable
-fun PinWelcomeContent(state: PinState, padding: PaddingValues, onLogin: (String, String) -> Unit) {
+private fun PinWelcomeContent(state: PinState, padding: PaddingValues, onLogin: (String, String) -> Unit) {
     var showWarningDialog by rememberSaveable { mutableStateOf(false) }
     var warningDialogShownInSession by rememberSaveable { mutableStateOf(false) }
     var showLoginDialog by rememberSaveable { mutableStateOf(false) }
@@ -257,7 +257,7 @@ private fun LandscapePinContent(state: PinState, onLogoutButtonClicked: () -> Un
 }
 
 @Composable
-fun UserText(userNumber: String?, modifier: Modifier = Modifier) {
+private fun UserText(userNumber: String?, modifier: Modifier = Modifier) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Text(
             text = stringResource(R.string.pin_label_user),
@@ -271,7 +271,7 @@ fun UserText(userNumber: String?, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun PinText(pin: String?, nextPin: String?, modifier: Modifier = Modifier) {
+private fun PinText(pin: String?, nextPin: String?, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(stringResource(R.string.pin_label_pin), style = MaterialTheme.typography.titleMedium)
         Crossfade(pin) { state ->

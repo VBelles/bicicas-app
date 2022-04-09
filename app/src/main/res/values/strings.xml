@@ -13,7 +13,8 @@
     <string name="settings_title_navigation">Navegación</string>
     <string name="settings_item_initial_screen">Pantalla de inicio</string>
     <string name="settings_item_navigation_type">Tipo de navegación</string>
-    <string name="settings_option_pin">Pin (Por defecto)</string>
+    <string name="settings_option_last">Última accedida (Por defecto)</string>
+    <string name="settings_option_pin">Pin</string>
     <string name="settings_option_stations">Estaciones</string>
     <string name="settings_option_map">Mapa</string>
     <string name="settings_option_system">Sistema (Por defecto)</string>

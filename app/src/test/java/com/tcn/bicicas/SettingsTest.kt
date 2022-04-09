@@ -8,7 +8,6 @@ import com.tcn.bicicas.ui.settings.SettingsViewModel
 import com.tcn.bicicas.utils.MainCoroutineRule
 import com.tcn.bicicas.utils.MemorySharedPreferences
 import com.tcn.bicicas.utils.get
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
@@ -16,7 +15,6 @@ import org.koin.dsl.module
 import org.koin.test.KoinTestRule
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SettingsTest {
 
     @get:Rule
@@ -37,8 +35,11 @@ class SettingsTest {
         settingsViewModel.settingsState.test {
             awaitItem() // Default settings state
 
-            settingsViewModel.onInitialScreenChanged(Settings.Screen.Map.ordinal)
-            assertEquals(Settings.Screen.Map, awaitItem().initialScreen)
+            settingsViewModel.onInitialScreenChanged(Settings.InitialScreen.Map.ordinal)
+            assertEquals(Settings.InitialScreen.Map, awaitItem().initialScreen)
+
+            settingsViewModel.onLastScreenChanged(2)
+            assertEquals(2, awaitItem().lastScreen)
 
             settingsViewModel.onThemeChanged(Settings.Theme.Dark.ordinal)
             assertEquals(Settings.Theme.Dark, awaitItem().theme)

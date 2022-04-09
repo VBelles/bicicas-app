@@ -9,6 +9,7 @@ class SettingsStore(private val preferences: SharedPreferences) : LocalStore<Set
 
     companion object {
         private const val KEY_INITIAL_SCREEN = "settings.initialScreen"
+        private const val KEY_LAST_SCREEN = "settings.lastScreen"
         private const val KEY_THEME = "settings.theme"
         private const val KEY_NAVIGATION_TYPE = "settings.navigationType"
         private const val KEY_DYNAMIC_COLOR_ENABLED = "settings.dynamicColorEnabled"
@@ -18,6 +19,7 @@ class SettingsStore(private val preferences: SharedPreferences) : LocalStore<Set
         val settings = Settings()
         return Settings(
             initialScreen = preferences.getEnum(KEY_INITIAL_SCREEN, settings.initialScreen),
+            lastScreen = preferences.getInt(KEY_LAST_SCREEN, settings.lastScreen),
             theme = preferences.getEnum(KEY_THEME, settings.theme),
             navigationType = preferences.getEnum(KEY_NAVIGATION_TYPE, settings.navigationType),
             dynamicColorEnabled = preferences.getBoolean(
@@ -29,6 +31,7 @@ class SettingsStore(private val preferences: SharedPreferences) : LocalStore<Set
     override fun save(value: Settings) {
         preferences.edit {
             putEnum(KEY_INITIAL_SCREEN, value.initialScreen)
+            putInt(KEY_LAST_SCREEN, value.lastScreen)
             putEnum(KEY_THEME, value.theme)
             putEnum(KEY_NAVIGATION_TYPE, value.navigationType)
             putBoolean(KEY_DYNAMIC_COLOR_ENABLED, value.dynamicColorEnabled)
@@ -38,6 +41,7 @@ class SettingsStore(private val preferences: SharedPreferences) : LocalStore<Set
     override fun clear() {
         preferences.edit {
             remove(KEY_INITIAL_SCREEN)
+            remove(KEY_LAST_SCREEN)
             remove(KEY_THEME)
             remove(KEY_NAVIGATION_TYPE)
             remove(KEY_DYNAMIC_COLOR_ENABLED)

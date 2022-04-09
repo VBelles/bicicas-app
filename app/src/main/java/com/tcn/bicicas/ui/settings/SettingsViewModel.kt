@@ -13,7 +13,13 @@ class SettingsViewModel(
 
     fun onInitialScreenChanged(option: Int) {
         settingsRepository.update(
-            settingsState.value.copy(initialScreen = Settings.Screen.values()[option])
+            settingsState.value.copy(initialScreen = Settings.InitialScreen.values()[option])
+        )
+    }
+
+    fun onLastScreenChanged(screen: Int) {
+        settingsRepository.update(
+            settingsState.value.copy(lastScreen = screen)
         )
     }
 

@@ -47,9 +47,7 @@ class MainActivity : ComponentActivity() {
             val dynamicColor = settings.dynamicColorEnabled
             val isPortrait = LocalConfiguration.current.orientation == ORIENTATION_PORTRAIT
             var settingsOpened by rememberSaveable { mutableStateOf(false) }
-            val navigationBarContrastEnforced = !isPortrait
-                    || settings.navigationType == Settings.NavigationType.Tabs
-                    || settingsOpened
+            val navigationBarContrastEnforced = !isPortrait || settingsOpened
 
             val systemUiController = rememberSystemUiController()
             SideEffect {

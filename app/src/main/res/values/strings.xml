@@ -12,7 +12,6 @@
     <string name="settings_item_subtitle_dynamic_color">El color de la aplicación dependerá del tema del sistema</string>
     <string name="settings_title_navigation">Navegación</string>
     <string name="settings_item_initial_screen">Pantalla de inicio</string>
-    <string name="settings_item_navigation_type">Tipo de navegación</string>
     <string name="settings_option_pin">Pin (Por defecto)</string>
     <string name="settings_option_stations">Estaciones</string>
     <string name="settings_option_map">Mapa</string>

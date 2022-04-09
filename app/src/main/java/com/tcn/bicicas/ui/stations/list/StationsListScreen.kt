@@ -34,12 +34,13 @@ import com.tcn.bicicas.ui.theme.Theme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.emptyFlow
-import org.koin.androidx.compose.getViewModel
 
 
 @Composable
-fun StationScreen(contentPadding: PaddingValues = PaddingValues()) {
-    val viewModel: StationsViewModel = getViewModel()
+fun StationScreen(
+    contentPadding: PaddingValues = PaddingValues(),
+    viewModel: StationsViewModel,
+) {
     val stationsState: StationsState by viewModel.state.collectAsState()
     StationsScreen(
         contentPadding = contentPadding,

@@ -1,12 +1,8 @@
 package com.tcn.bicicas.ui.stations.map
 
+import android.content.Context
 import android.os.Bundle
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.google.android.gms.maps.GoogleMap
@@ -14,41 +10,42 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.tcn.bicicas.R
 
-@Composable
-fun rememberMapViewWithLifecycle(): MapView {
-    val context = LocalContext.current
-    val mapView = remember {
-        MapViewHorizontalScrollFixed(context).apply { id = R.id.map }
-    }
 
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    DisposableEffect(lifecycle, mapView) {
-        // Make MapView follow the current lifecycle
-        val lifecycleObserver = getMapLifecycleObserver(mapView)
-        lifecycle.addObserver(lifecycleObserver)
-        onDispose {
-            lifecycle.removeObserver(lifecycleObserver)
+data class MapState<T>(
+    val mapView: MapView,
+    val markerAdapter: MapMarkerAdapter<T>,
+    val icons: MutableMap<Any, BitmapDescriptor>
+) {
+    companion object {
+        fun <T> create(
+            context: Context,
+            lifecycle: Lifecycle,
+            savedInstanceState: Bundle?,
+            markerAdapter: MapMarkerAdapter<T>,
+            mapId: Int,
+        ): MapState<T> {
+            val mapView = MapViewHorizontalScrollFixed(context).apply { id = mapId }
+            lifecycle.addObserver(getMapLifecycleObserver(mapView, savedInstanceState))
+            return MapState(mapView, markerAdapter, hashMapOf())
         }
     }
-
-    return mapView
 }
 
-private fun getMapLifecycleObserver(mapView: MapView): LifecycleEventObserver =
-    LifecycleEventObserver { _, event ->
-        when (event) {
-            Lifecycle.Event.ON_CREATE -> mapView.onCreate(Bundle())
-            Lifecycle.Event.ON_START -> mapView.onStart()
-            Lifecycle.Event.ON_RESUME -> mapView.onResume()
-            Lifecycle.Event.ON_PAUSE -> mapView.onPause()
-            Lifecycle.Event.ON_STOP -> mapView.onStop()
-            Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
-            else -> throw IllegalStateException()
-        }
+fun getMapLifecycleObserver(
+    mapView: MapView,
+    savedInstanceState: Bundle? = null
+): LifecycleEventObserver = LifecycleEventObserver { _, event ->
+    when (event) {
+        Lifecycle.Event.ON_CREATE -> mapView.onCreate(savedInstanceState)
+        Lifecycle.Event.ON_START -> mapView.onStart()
+        Lifecycle.Event.ON_RESUME -> mapView.onResume()
+        Lifecycle.Event.ON_PAUSE -> mapView.onPause()
+        Lifecycle.Event.ON_STOP -> mapView.onStop()
+        Lifecycle.Event.ON_DESTROY -> mapView.onDestroy()
+        Lifecycle.Event.ON_ANY -> Unit // Do Nothing
     }
-
+}
 
 class MapMarkerAdapter<T> {
 

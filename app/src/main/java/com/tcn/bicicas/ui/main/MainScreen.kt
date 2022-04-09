@@ -1,6 +1,5 @@
 package com.tcn.bicicas.ui.main
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,29 +17,37 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
 import com.tcn.bicicas.R
 import com.tcn.bicicas.data.model.Settings
+import com.tcn.bicicas.data.model.Station
 import com.tcn.bicicas.ui.pin.PinScreen
+import com.tcn.bicicas.ui.stations.StationsViewModel
 import com.tcn.bicicas.ui.stations.list.StationScreen
 import com.tcn.bicicas.ui.stations.map.MapScreen
+import com.tcn.bicicas.ui.stations.map.MapState
 import com.tcn.bicicas.ui.theme.BarHeight
 import com.tcn.bicicas.ui.theme.BarTonalElevation
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.getViewModel
 
 data class Screen(
     val icon: ImageVector,
+    val route: String,
     val content: @Composable (PaddingValues) -> Unit
 )
 
@@ -48,32 +55,37 @@ data class Screen(
 fun MainScreen(
     navigationType: Settings.NavigationType,
     initialScreen: Int,
-    navigateToMapEvent: Flow<String>,
+    mapState: MapState<Station>,
     onSettingsClick: () -> Unit
 ) {
-    val screens = listOf(
-        Screen(Icons.Rounded.Pin) { padding ->
-            PinScreen(padding)
-        },
-        Screen(Icons.Rounded.List) { padding ->
-            StationScreen(padding)
-        },
-        Screen(Icons.Rounded.Map) { padding ->
-            MapScreen(padding)
-        },
-    )
+
+    val stationsViewModel: StationsViewModel = getViewModel()
+
+    val screens = remember {
+        listOf(
+            Screen(Icons.Rounded.Pin, "pin") { padding ->
+                PinScreen(padding)
+            },
+            Screen(Icons.Rounded.List, "list") { padding ->
+                StationScreen(padding, stationsViewModel)
+            },
+            Screen(Icons.Rounded.Map, "map") { padding ->
+                MapScreen(padding, stationsViewModel, mapState)
+            },
+        )
+    }
 
     when (navigationType) {
         Settings.NavigationType.Tabs -> TabsScreen(
             screens = screens,
             initialScreen = initialScreen,
-            navigateToMapEvent = navigateToMapEvent,
+            navigateToMapEvent = stationsViewModel.navigateToMapEvent,
             onSettingsClick = onSettingsClick
         )
         Settings.NavigationType.BottomBar -> BottomBarScreen(
             screens = screens,
             initialScreen = initialScreen,
-            navigateToMapEvent = navigateToMapEvent,
+            navigateToMapEvent = stationsViewModel.navigateToMapEvent,
             onSettingsClick = onSettingsClick
         )
     }
@@ -143,23 +155,23 @@ fun TabsScreen(
 
 }
 
+
 @Composable
 fun BottomBarScreen(
-    screens: List<Screen>,
     initialScreen: Int,
+    screens: List<Screen>,
     navigateToMapEvent: Flow<String>,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
 ) {
-    var selectedScreen by rememberSaveable { mutableStateOf(initialScreen) }
-
+    val navController = rememberNavController()
+    val currentEntry by navController.currentBackStackEntryAsState()
     val contentPadding = WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
         .asPaddingValues()
 
     LaunchedEffect(navigateToMapEvent) {
-        navigateToMapEvent.collect {
-            selectedScreen = Settings.Screen.Map.ordinal
-        }
+        navigateToMapEvent.collect { navigate(navController, "map") }
     }
+
     Column {
         ApplicationTopBar(onSettingsClick)
         Box(
@@ -167,9 +179,11 @@ fun BottomBarScreen(
                 .weight(1f)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            screens.forEachIndexed { index, screen ->
-                AnimatedAlpha(selectedScreen == index) {
-                    screen.content(contentPadding)
+            NavHost(navController, screens[initialScreen].route) {
+                for (screen in screens) {
+                    composable(screen.route) {
+                        screen.content(contentPadding)
+                    }
                 }
             }
         }
@@ -179,11 +193,11 @@ fun BottomBarScreen(
             shadowElevation = 10.dp,
         ) {
             BottomAppBar(tonalElevation = 0.dp, modifier = Modifier.navigationBarsPadding()) {
-                screens.forEachIndexed { index, screen ->
+                screens.forEach { screen ->
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = null) },
-                        selected = selectedScreen == index,
-                        onClick = { selectedScreen = index },
+                        selected = currentEntry?.destination?.route == screen.route,
+                        onClick = { navigate(navController, screen.route) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.onPrimary,
                             indicatorColor = MaterialTheme.colorScheme.primary
@@ -192,6 +206,14 @@ fun BottomBarScreen(
                 }
             }
         }
+    }
+}
+
+private fun navigate(navController: NavController, route: String) {
+    navController.navigate(route) {
+        popUpTo(0) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }
 
@@ -229,15 +251,4 @@ private fun ApplicationTopBar(onSettingsClick: () -> Unit) {
 
         }
     }
-}
-
-@Composable
-fun AnimatedAlpha(visible: Boolean, content: @Composable BoxScope.() -> Unit) {
-    val alpha by animateFloatAsState(targetValue = if (visible) 1f else 0f)
-    Box(
-        modifier = Modifier
-            .alpha(alpha)
-            .zIndex(alpha - 1f),
-        content = content,
-    )
 }

@@ -37,7 +37,6 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapView
-import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MapStyleOptions
@@ -49,58 +48,42 @@ import com.tcn.bicicas.data.model.Station
 import com.tcn.bicicas.ui.components.plus
 import com.tcn.bicicas.ui.stations.StationItem
 import com.tcn.bicicas.ui.stations.StationItemVertical
-import com.tcn.bicicas.ui.stations.StationsState
 import com.tcn.bicicas.ui.stations.StationsViewModel
 import com.tcn.bicicas.ui.theme.HighAvailabilityColor
 import com.tcn.bicicas.ui.theme.LocalDarkTheme
 import com.tcn.bicicas.ui.theme.LowAvailabilityColor
 import com.tcn.bicicas.ui.theme.NoAvailabilityColor
 import kotlinx.coroutines.flow.Flow
-import org.koin.androidx.compose.getViewModel
 
 
 @Composable
-fun MapScreen(contentPadding: PaddingValues) {
-    val viewModel: StationsViewModel = getViewModel()
+fun MapScreen(
+    contentPadding: PaddingValues,
+    viewModel: StationsViewModel,
+    mapState: MapState<Station>
+) {
     val stationsState by viewModel.state.collectAsState()
 
     MapScreen(
-        stationsState = stationsState,
+        mapState = mapState,
+        stations = stationsState.stations,
         activeFlow = viewModel.activeFlow,
         navigateToStationEvent = viewModel.navigateToMapEvent,
         contentPadding = contentPadding,
-        onFavoriteClicked = viewModel::onFavoriteClicked
+        onFavoriteClicked = viewModel::onFavoriteClicked,
     )
 }
 
 
 @Composable
 fun MapScreen(
-    stationsState: StationsState,
-    activeFlow: Flow<Boolean>,
-    navigateToStationEvent: Flow<String>,
-    contentPadding: PaddingValues,
-    onFavoriteClicked: (String) -> Unit
-) {
-    StationsMap(
-        stations = stationsState.stations,
-        activeFlow = activeFlow,
-        navigateToStationEvent = navigateToStationEvent,
-        contentPadding = contentPadding,
-        onFavoriteClicked = onFavoriteClicked,
-    )
-    //MapComponent()
-}
-
-@Composable
-fun StationsMap(
+    mapState: MapState<Station>,
     stations: List<Station>,
     activeFlow: Flow<Boolean>,
     navigateToStationEvent: Flow<String>,
     contentPadding: PaddingValues,
-    onFavoriteClicked: (String) -> Unit
+    onFavoriteClicked: (String) -> Unit,
 ) {
-    val mapView = rememberMapViewWithLifecycle()
 
     var selectedStationId: String? by rememberSaveable { mutableStateOf(null) }
 
@@ -115,12 +98,12 @@ fun StationsMap(
     var mapPadding: PaddingValues by remember(contentPadding) { mutableStateOf(contentPadding) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        MapViewContainer(mapView, mapPadding, stations, navigateToStationEvent) { id ->
+        MapViewContainer(mapState, mapPadding, stations, navigateToStationEvent) { id ->
             selectedStationId = id
         }
 
         LocationPermissionButton(
-            mapView = mapView,
+            mapView = mapState.mapView,
             activeFlow = activeFlow,
             modifier = Modifier
                 .padding(mapPadding)
@@ -250,22 +233,23 @@ data class MarkerKey(val availabilityColor: Int, val favorite: Boolean, val hasE
 
 @Composable
 fun MapViewContainer(
-    map: MapView,
+    mapState: MapState<Station>,
     padding: PaddingValues,
     stations: List<Station>,
     navigateToStationEvent: Flow<String>,
     onStationSelected: (String?) -> Unit
 ) {
 
+    val map = mapState.mapView
+    val cachedIcons = mapState.icons
+    val markersAdapter = mapState.markerAdapter
     val context = LocalContext.current
-    val markersAdapter = remember { MapMarkerAdapter<Station>() }
-    val cachedIcons = remember { hashMapOf<MarkerKey, BitmapDescriptor>() }
 
     // Update markers given stations
     LaunchedEffect(map, stations) {
         val googleMap = map.awaitMap()
 
-        markersAdapter.submit(googleMap, stations, Station::id) { station ->
+        mapState.markerAdapter.submit(googleMap, stations, Station::id) { station ->
             val hasElectric = station.electricBikesAvailable > 0
             markerOptions {
                 title(station.name)
@@ -315,13 +299,31 @@ fun MapViewContainer(
     }
 
     // Initial map configuration
-    LaunchedEffect(map) {
-        val googleMap = map.awaitMap()
-        googleMap.uiSettings.setAllGesturesEnabled(true)
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(LatLng(39.9887138, -0.04635), 13.1f))
-        googleMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style))
+    val initialized = rememberSaveable { mutableStateOf(false) }
+    if (!initialized.value) {
+        initialized.value = true
+        LaunchedEffect(map) {
+            val googleMap = map.awaitMap()
+            googleMap.uiSettings.setAllGesturesEnabled(true)
+            val target = CameraUpdateFactory.newLatLngZoom(LatLng(39.9887138, -0.04635), 13.1f)
+            googleMap.moveCamera(target)
+        }
     }
 
+    // Update map theme
+    val darkTheme = LocalDarkTheme.current
+    val isMapDarkTheme = rememberSaveable { mutableStateOf(false) }
+    if (darkTheme != isMapDarkTheme.value) {
+        isMapDarkTheme.value = darkTheme
+        LaunchedEffect(map, darkTheme) {
+            val googleMap = map.awaitMap()
+            val mapStyle = when {
+                darkTheme -> MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style)
+                else -> null
+            }
+            googleMap.setMapStyle(mapStyle)
+        }
+    }
 
     // Handle navigation to station
     LaunchedEffect(navigateToStationEvent) {
@@ -335,17 +337,6 @@ fun MapViewContainer(
                 googleMap.awaitAnimateCamera(cameraUpdate, 500)
             }
         }
-    }
-
-    // Update map theme
-    val darkTheme = LocalDarkTheme.current
-    LaunchedEffect(map, darkTheme) {
-        val googleMap = map.awaitMap()
-        val mapStyle = when {
-            darkTheme -> MapStyleOptions.loadRawResourceStyle(context, R.raw.map_style)
-            else -> null
-        }
-        googleMap.setMapStyle(mapStyle)
     }
 
     AndroidView({ map }) {}

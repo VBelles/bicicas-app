@@ -28,6 +28,7 @@ class StationsViewModel(
         // Refresh data every 30s while app is active
         viewModelScope.launch {
             stationRepository.getStations(false)
+            _state.update { state -> state.copy(hasLoaded = true) }
             activeFlow.collectLatest { active ->
                 while (active) {
                     refresh(false)

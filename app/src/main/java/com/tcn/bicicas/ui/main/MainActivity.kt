@@ -13,7 +13,9 @@ import com.tcn.bicicas.ui.stations.map.MapState
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
+        var keepOnScreen = true
+        val hideSplashScreen = { keepOnScreen = false }
+        installSplashScreen().setKeepOnScreenCondition { keepOnScreen }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(savedInstanceState)
 
@@ -21,7 +23,7 @@ class MainActivity : ComponentActivity() {
             this, lifecycle, savedInstanceState, MapMarkerAdapter<Station>(), R.id.map
         )
 
-        setContent { MainScreen(mapState) }
+        setContent { MainScreen(mapState, hideSplashScreen) }
     }
 }
 

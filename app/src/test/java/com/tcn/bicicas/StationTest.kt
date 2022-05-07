@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.koin.dsl.module
@@ -34,7 +35,7 @@ class StationTest {
     @get:Rule
     val mockWebServer = MockWebServer()
 
-    private val activeFlow = MutableSharedFlow<Boolean>(replay = 1)
+    private lateinit var activeFlow: MutableSharedFlow<Boolean>
 
     @get:Rule
     val koinTestRule = KoinTestRule.create {
@@ -47,12 +48,18 @@ class StationTest {
         )
     }
 
+    @Before
+    fun setup() {
+        activeFlow = MutableSharedFlow(replay = 1)
+    }
 
     @Test
     fun when_view_model_is_initialized_then_empty_state_is_emitted() = runBlocking {
         val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
+        activeFlow.emit(true)
         stationsViewModel.state.test {
             assertEquals(StationsState(emptyList(), null, false), awaitItem())
+            cancelAndIgnoreRemainingEvents()
         }
     }
 

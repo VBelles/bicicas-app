@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.emptyFlow
 fun StationScreen(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: StationsViewModel,
+    hideSplashScreen: () -> Unit,
 ) {
     val stationsState: StationsState by viewModel.state.collectAsState()
     StationsScreen(
@@ -49,6 +50,7 @@ fun StationScreen(
         onRefresh = viewModel::onRefresh,
         onFavoriteClicked = viewModel::onFavoriteClicked,
         onMapClicked = viewModel::onMapClicked,
+        hideSplashScreen = hideSplashScreen,
     )
 }
 
@@ -60,8 +62,13 @@ fun StationsScreen(
     onRefresh: () -> Unit,
     onFavoriteClicked: (String) -> Unit,
     onMapClicked: (String) -> Unit,
+    hideSplashScreen: () -> Unit,
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
+
+    if (stationsState.hasLoaded) {
+        hideSplashScreen()
+    }
 
     val loadingErrorText = stringResource(R.string.stations_list_loading_error)
     val loadingErrorAction = stringResource(R.string.stations_list_loading_error_retry)
@@ -283,9 +290,10 @@ fun StationsScreenPreview() {
         StationsScreen(
             stationsState = stationsState(),
             errorEvent = emptyFlow(),
-            onRefresh = { },
-            onFavoriteClicked = { },
-            onMapClicked = { },
+            onRefresh = {},
+            onFavoriteClicked = {},
+            onMapClicked = {},
+            hideSplashScreen = {},
         )
     }
 }

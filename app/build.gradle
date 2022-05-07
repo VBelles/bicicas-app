@@ -31,11 +31,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = '11'
         freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
     }
     buildFeatures {
@@ -61,15 +61,14 @@ dependencies {
     // Compose
     implementation "androidx.compose.foundation:foundation:$compose_version"
     implementation "androidx.compose.ui:ui:$compose_version"
-    implementation 'androidx.compose.material3:material3:1.0.0-alpha10'
+    implementation 'androidx.compose.material3:material3:1.0.0-alpha09'
     implementation "androidx.compose.material:material:$compose_version"
     implementation "androidx.compose.material:material-icons-extended:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"
-    //implementation 'androidx.activity:activity-compose:1.4.0'
     implementation 'androidx.navigation:navigation-compose:2.4.2'
 
     // Compose extensions
-    def accompanist_version = '0.24.7-alpha'
+    def accompanist_version = '0.24.6-alpha'
     implementation "com.google.accompanist:accompanist-swiperefresh:$accompanist_version"
     implementation "com.google.accompanist:accompanist-permissions:$accompanist_version"
     implementation "com.google.accompanist:accompanist-pager:$accompanist_version"

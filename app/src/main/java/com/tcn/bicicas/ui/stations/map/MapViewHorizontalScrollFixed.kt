@@ -10,8 +10,10 @@ class MapViewHorizontalScrollFixed(context: Context) : MapView(context) {
         when (ev?.action) {
             MotionEvent.ACTION_DOWN ->
                 parent.requestDisallowInterceptTouchEvent(true)
+
             MotionEvent.ACTION_CANCEL, MotionEvent.ACTION_UP ->
                 parent.requestDisallowInterceptTouchEvent(false)
+
             else -> Unit
         }
         return super.onInterceptTouchEvent(ev)

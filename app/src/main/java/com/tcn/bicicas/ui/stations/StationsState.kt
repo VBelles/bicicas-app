@@ -9,4 +9,5 @@ data class StationsState(
     val secondsSinceLastUpdate: Long? = null,
     val isLoading: Boolean = false,
     val hasLoaded: Boolean = false,
+    val navigateTo: String? = null,
 )

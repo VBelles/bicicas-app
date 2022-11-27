@@ -1,6 +1,11 @@
 package com.tcn.bicicas.data.datasource.remote
 
-import okhttp3.*
+import okhttp3.Interceptor
+import okhttp3.MediaType
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.ResponseBody
 
 class TestAuthInterceptor : Interceptor {
 
@@ -28,5 +33,4 @@ class TestAuthInterceptor : Interceptor {
             .code(200)
             .build()
     }
-
 }

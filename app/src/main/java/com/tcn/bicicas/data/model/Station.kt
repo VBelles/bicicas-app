@@ -1,7 +1,7 @@
 package com.tcn.bicicas.data.model
 
 import androidx.compose.runtime.Immutable
-import java.util.*
+import java.util.Date
 
 
 @Immutable

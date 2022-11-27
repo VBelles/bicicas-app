@@ -22,7 +22,7 @@ import org.koin.test.KoinTestRule
 import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PinTest: KoinTest {
+class PinTest : KoinTest {
 
     @get:Rule
     val mainCoroutineRule = MainCoroutineRule()
@@ -165,9 +165,9 @@ class PinTest: KoinTest {
 
             pinViewModel.logout()
             val logoutState = awaitItem()
-/*            assertNull(logoutState.pin)
-            assertNull(logoutState.nextPin)
-            assertNull(logoutState.userNumber)*/
+            /*            assertNull(logoutState.pin)
+                        assertNull(logoutState.nextPin)
+                        assertNull(logoutState.userNumber)*/
             assertFalse(logoutState.loggedIn)
 
             // Advance time and expect state to not be updated

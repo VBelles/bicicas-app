@@ -17,7 +17,6 @@ import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.pagerTabIndicatorOffset
 import com.google.accompanist.pager.rememberPagerState
 import com.tcn.bicicas.ui.theme.BarTonalElevation
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPagerApi::class)
@@ -25,17 +24,15 @@ import kotlinx.coroutines.launch
 fun TabsScreen(
     screens: List<Screen>,
     initialScreen: Int,
-    navigateToMapEvent: Flow<String>,
+    navigateToMap: Boolean,
     onNavigatedToScreen: (Int) -> Unit
 ) {
     val pagerState = rememberPagerState(initialScreen)
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(navigateToMapEvent) {
-        navigateToMapEvent.collect {
-            pagerState.animateScrollToPage(2)
-            onNavigatedToScreen(2)
-        }
+    LaunchedEffect(navigateToMap) {
+        pagerState.animateScrollToPage(2)
+        onNavigatedToScreen(2)
     }
 
     Column(Modifier.fillMaxSize()) {

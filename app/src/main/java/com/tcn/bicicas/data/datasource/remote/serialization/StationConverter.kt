@@ -5,7 +5,8 @@ import okhttp3.ResponseBody
 import org.json.JSONObject
 import retrofit2.Converter
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 class StationConverter : Converter<ResponseBody, Array<Station>> {
 

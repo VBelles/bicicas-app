@@ -2,7 +2,7 @@ package com.tcn.bicicas.ui
 
 import com.tcn.bicicas.data.model.Station
 import com.tcn.bicicas.ui.stations.StationsState
-import java.util.*
+import java.util.Date
 import kotlin.random.Random
 
 fun stationsState() = StationsState(List(4) { station(it) })

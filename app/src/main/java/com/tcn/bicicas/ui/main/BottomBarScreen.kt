@@ -17,7 +17,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,7 +42,7 @@ fun BottomBarScreen(
     val insets = WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
     var selectedScreenIndex by remember { mutableStateOf(initialScreen) }
 
-    LaunchedEffect(navigateToMap) {
+    if (navigateToMap) {
         selectedScreenIndex = 2
         navigate(navController, "route_$selectedScreenIndex")
         onNavigatedToScreen(selectedScreenIndex)

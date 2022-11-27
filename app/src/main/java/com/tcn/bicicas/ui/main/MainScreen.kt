@@ -59,6 +59,7 @@ import com.tcn.bicicas.ui.stations.map.MapState
 import com.tcn.bicicas.ui.theme.BarHeight
 import com.tcn.bicicas.ui.theme.BarTonalElevation
 import com.tcn.bicicas.ui.theme.Theme
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import org.koin.androidx.compose.getViewModel
 
@@ -129,7 +130,7 @@ private fun MainContent(
 
     val stationsViewModel: StationsViewModel = getViewModel()
     val navigateFlow = remember(stationsViewModel) {
-        stationsViewModel.state.map { state -> state.navigateTo != null }
+        stationsViewModel.state.map { state -> state.navigateTo != null }.distinctUntilChanged()
     }
 
     if (initialScreen != 1) {

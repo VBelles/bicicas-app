@@ -8,6 +8,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
+import android.view.ViewGroup
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -339,7 +340,10 @@ fun MapViewContainer(
         }
     }
 
-    AndroidView({ map }) {}
+    AndroidView(factory = {
+        (map.parent as? ViewGroup?)?.removeView(map)
+        map
+    })
 }
 
 private fun buildMarkerBitmap(context: Context, markerKey: MarkerKey): Bitmap {

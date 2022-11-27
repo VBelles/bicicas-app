@@ -2,18 +2,44 @@ package com.tcn.bicicas.ui.stations.list
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SnackbarHost
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.SnackbarResult
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -22,8 +48,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.tcn.bicicas.R
 import com.tcn.bicicas.ui.components.plus
 import com.tcn.bicicas.ui.stations.StationItem
@@ -34,6 +58,7 @@ import com.tcn.bicicas.ui.theme.Theme
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.emptyFlow
+import kotlin.ranges.contains
 
 
 @Composable
@@ -162,7 +187,7 @@ fun StationsListEmpty(
 }
 
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterialApi::class)
 @Composable
 private fun StationsListContent(
     contentPadding: PaddingValues = PaddingValues(),
@@ -171,13 +196,12 @@ private fun StationsListContent(
     onFavoriteClicked: (String) -> Unit,
     onMapClicked: (String) -> Unit,
 ) {
-    val swipeRefreshState = rememberSwipeRefreshState(isRefreshing = stationsState.isLoading)
-    SwipeRefresh(
-        state = swipeRefreshState,
-        onRefresh = onRefresh,
+    val pullRefreshState = rememberPullRefreshState(stationsState.isLoading, onRefresh)
+    Box(
         modifier = Modifier
+            .pullRefresh(pullRefreshState)
             .background(MaterialTheme.colorScheme.background)
-            .fillMaxSize()
+            .fillMaxSize(),
     ) {
         LazyColumn(
             contentPadding = contentPadding.plus(
@@ -232,6 +256,11 @@ private fun StationsListContent(
                 }
             }
         }
+        PullRefreshIndicator(
+            stationsState.isLoading,
+            pullRefreshState,
+            Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
@@ -252,10 +281,12 @@ private fun StationsStatus(updatedSecondsAgo: Long?) {
                 R.string.stations_list_status_updated_minutes_ago,
                 updatedSecondsAgo / 60
             )
+
             in 60 * 60..60 * 60 * 24 -> stringResource(
                 R.string.stations_list_status_updated_hours_ago,
                 updatedSecondsAgo / 60 / 60
             )
+
             else -> stringResource(
                 R.string.stations_list_status_updated_days_ago,
                 updatedSecondsAgo / 60 / 60 / 24

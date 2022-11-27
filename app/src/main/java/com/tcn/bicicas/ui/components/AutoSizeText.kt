@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFontLoader
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.text.ParagraphIntrinsics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -52,7 +52,7 @@ fun AutoSizeText(
                     letterSpacing = letterSpacing
                 ),
                 density = LocalDensity.current,
-                resourceLoader = LocalFontLoader.current
+                fontFamilyResolver = LocalFontFamilyResolver.current
             )
         }
 

@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tcn.bicicas.data.Clock
 import com.tcn.bicicas.data.repository.StationRepository
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -15,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -30,9 +28,6 @@ class StationsViewModel(
     val state: StateFlow<StationsState> = _state.asStateFlow()
     private val _errorEvent = MutableSharedFlow<Unit>()
     val errorEvent: Flow<Unit> = _errorEvent.asSharedFlow()
-
-    private val _navigateToMapEvent = Channel<String>(Channel.BUFFERED)
-    val navigateToMapEvent: Flow<String> = _navigateToMapEvent.receiveAsFlow()
 
     init {
         // Refresh data every 30s while app is active
@@ -65,8 +60,12 @@ class StationsViewModel(
         stationRepository.toggleFavorite(stationId)
     }
 
-    fun onMapClicked(stationId: String) = viewModelScope.launch {
-        _navigateToMapEvent.send(stationId)
+    fun onMapClicked(stationId: String) {
+        _state.update { state -> state.copy(navigateTo = stationId) }
+    }
+
+    fun onNavigatedToStation() {
+        _state.update { state -> state.copy(navigateTo = null) }
     }
 
     private fun refresh(fromUser: Boolean) = viewModelScope.launch {

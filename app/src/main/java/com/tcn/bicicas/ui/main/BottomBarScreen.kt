@@ -30,26 +30,23 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tcn.bicicas.ui.theme.BarTonalElevation
-import kotlinx.coroutines.flow.Flow
 
 
 @Composable
 fun BottomBarScreen(
     initialScreen: Int,
     screens: List<Screen>,
-    navigateToMapEvent: Flow<String>,
+    navigateToMap: Boolean,
     onNavigatedToScreen: (Int) -> Unit,
 ) {
     val navController = rememberNavController()
     val insets = WindowInsets.navigationBars.only(WindowInsetsSides.Horizontal)
     var selectedScreenIndex by remember { mutableStateOf(initialScreen) }
 
-    LaunchedEffect(navigateToMapEvent) {
-        navigateToMapEvent.collect {
-            selectedScreenIndex = 2
-            navigate(navController, "route_$selectedScreenIndex")
-            onNavigatedToScreen(selectedScreenIndex)
-        }
+    LaunchedEffect(navigateToMap) {
+        selectedScreenIndex = 2
+        navigate(navController, "route_$selectedScreenIndex")
+        onNavigatedToScreen(selectedScreenIndex)
     }
 
     val initialRoute = rememberSaveable { "route_$initialScreen" }

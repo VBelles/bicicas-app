@@ -59,6 +59,7 @@ import com.tcn.bicicas.ui.stations.map.MapState
 import com.tcn.bicicas.ui.theme.BarHeight
 import com.tcn.bicicas.ui.theme.BarTonalElevation
 import com.tcn.bicicas.ui.theme.Theme
+import kotlinx.coroutines.flow.map
 import org.koin.androidx.compose.getViewModel
 
 data class Screen(
@@ -125,6 +126,9 @@ private fun MainContent(
 ) {
 
     val stationsViewModel: StationsViewModel = getViewModel()
+    val navigateFlow = remember(stationsViewModel) {
+        stationsViewModel.state.map { state -> state.navigateTo != null }
+    }
 
     val screens = remember {
         listOf(
@@ -142,18 +146,19 @@ private fun MainContent(
 
     Column(modifier = Modifier.fillMaxSize()) {
         ApplicationTopBar(onSettingsClick)
+        val navigateToMap by navigateFlow.collectAsState(false)
         when (navigationType) {
             Settings.NavigationType.Tabs -> TabsScreen(
                 screens = screens,
                 initialScreen = initialScreen,
-                navigateToMapEvent = stationsViewModel.navigateToMapEvent,
+                navigateToMap = navigateToMap,
                 onNavigatedToScreen = onNavigatedToScreen,
             )
 
             Settings.NavigationType.BottomBar -> BottomBarScreen(
                 screens = screens,
                 initialScreen = initialScreen,
-                navigateToMapEvent = stationsViewModel.navigateToMapEvent,
+                navigateToMap = navigateToMap,
                 onNavigatedToScreen = onNavigatedToScreen,
             )
         }

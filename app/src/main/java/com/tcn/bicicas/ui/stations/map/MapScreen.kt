@@ -69,7 +69,8 @@ fun MapScreen(
         mapState = mapState,
         stations = stationsState.stations,
         activeFlow = viewModel.activeFlow,
-        navigateToStationEvent = viewModel.navigateToMapEvent,
+        stationToNavigate = stationsState.navigateTo,
+        onNavigatedToStation = viewModel::onNavigatedToStation,
         contentPadding = contentPadding,
         onFavoriteClicked = viewModel::onFavoriteClicked,
     )
@@ -81,7 +82,8 @@ fun MapScreen(
     mapState: MapState<Station>,
     stations: List<Station>,
     activeFlow: Flow<Boolean>,
-    navigateToStationEvent: Flow<String>,
+    stationToNavigate: String?,
+    onNavigatedToStation: () -> Unit,
     contentPadding: PaddingValues,
     onFavoriteClicked: (String) -> Unit,
 ) {
@@ -99,8 +101,9 @@ fun MapScreen(
     var mapPadding: PaddingValues by remember(contentPadding) { mutableStateOf(contentPadding) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        MapViewContainer(mapState, mapPadding, stations, navigateToStationEvent) { id ->
+        MapViewContainer(mapState, mapPadding, stations, stationToNavigate) { id ->
             selectedStationId = id
+            onNavigatedToStation()
         }
 
         LocationPermissionButton(
@@ -237,7 +240,7 @@ fun MapViewContainer(
     mapState: MapState<Station>,
     padding: PaddingValues,
     stations: List<Station>,
-    navigateToStationEvent: Flow<String>,
+    stationToNavigate: String?,
     onStationSelected: (String?) -> Unit
 ) {
 
@@ -327,16 +330,15 @@ fun MapViewContainer(
     }
 
     // Handle navigation to station
-    LaunchedEffect(navigateToStationEvent) {
+    LaunchedEffect(stationToNavigate) {
+        if (stationToNavigate == null) return@LaunchedEffect
         val googleMap = map.awaitMap()
-        navigateToStationEvent.collect { stationId ->
-            val marker = markersAdapter.getMarker(stationId)
-            if (marker != null) {
-                marker.showInfoWindow()
-                onStationSelected(stationId)
-                val cameraUpdate = CameraUpdateFactory.newLatLngZoom(marker.position, 14F)
-                googleMap.awaitAnimateCamera(cameraUpdate, 500)
-            }
+        val marker = markersAdapter.getMarker(stationToNavigate)
+        if (marker != null) {
+            marker.showInfoWindow()
+            onStationSelected(stationToNavigate)
+            val cameraUpdate = CameraUpdateFactory.newLatLngZoom(marker.position, 14F)
+            googleMap.awaitAnimateCamera(cameraUpdate, 500)
         }
     }
 

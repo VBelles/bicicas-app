@@ -230,12 +230,13 @@ fun Footer(modifier: Modifier) {
     }
 }
 
-private fun getScreenName(context: Context, initialScreen: Settings.InitialScreen) = when (initialScreen) {
-    Settings.InitialScreen.Last -> context.getString(R.string.settings_option_last)
-    Settings.InitialScreen.Pin -> context.getString(R.string.settings_option_pin)
-    Settings.InitialScreen.Stations -> context.getString(R.string.settings_option_stations)
-    Settings.InitialScreen.Map -> context.getString(R.string.settings_option_map)
-}
+private fun getScreenName(context: Context, initialScreen: Settings.InitialScreen) =
+    when (initialScreen) {
+        Settings.InitialScreen.Last -> context.getString(R.string.settings_option_last)
+        Settings.InitialScreen.Pin -> context.getString(R.string.settings_option_pin)
+        Settings.InitialScreen.Stations -> context.getString(R.string.settings_option_stations)
+        Settings.InitialScreen.Map -> context.getString(R.string.settings_option_map)
+    }
 
 private fun getThemeName(context: Context, theme: Settings.Theme) = when (theme) {
     Settings.Theme.System -> context.getString(R.string.settings_option_system)

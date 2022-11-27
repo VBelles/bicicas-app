@@ -22,7 +22,8 @@ suspend fun <T : Any> resultOf(call: suspend () -> Response<T>): Result<Pair<Res
         val response = call()
         when {
             !response.isSuccessful ->
-                Result.failure(HttpError(response.code(), response.raw().body?.toString()))
+                Result.failure(HttpError(response.code(), response.raw().body()?.toString()))
+
             response.body() != null -> Result.success(response to response.body()!!)
             else -> Result.failure(UnknownError())
         }
@@ -32,6 +33,7 @@ suspend fun <T : Any> resultOf(call: suspend () -> Response<T>): Result<Pair<Res
         when (t) {
             is HttpException ->
                 Result.failure(HttpError(t.code(), t.response()?.errorBody()?.toString()))
+
             is IOException -> Result.failure(NetworkError(t))
             else -> Result.failure(t)
         }

@@ -105,7 +105,7 @@ fun MainScreen(mapState: MapState<Station>, hideSplashScreen: () -> Unit) {
                 mapState = mapState,
                 onSettingsClick = { settingsOpened = true },
                 onNavigatedToScreen = settingsViewModel::onLastScreenChanged,
-                hideSplashScreen =hideSplashScreen,
+                hideSplashScreen = hideSplashScreen,
             )
             AnimatedVisibility(
                 visible = settingsOpened,
@@ -133,19 +133,17 @@ private fun MainContent(
         stationsViewModel.state.map { state -> state.navigateTo != null }.distinctUntilChanged()
     }
 
-    if (initialScreen != 1) {
-        hideSplashScreen()
-    }
-
     val screens = remember {
         listOf(
             Screen(Icons.Rounded.Pin) { padding ->
+                hideSplashScreen()
                 PinScreen(padding)
             },
             Screen(Icons.Rounded.List) { padding ->
                 StationScreen(padding, stationsViewModel, hideSplashScreen)
             },
             Screen(Icons.Rounded.Map) { padding ->
+                hideSplashScreen()
                 MapScreen(padding, stationsViewModel, mapState)
             },
         )

@@ -8,5 +8,6 @@ data class StationsState(
     val stations: List<Station> = emptyList(),
     val secondsSinceLastUpdate: Long? = null,
     val isLoading: Boolean = false,
+    val hasLoaded: Boolean = false,
     val navigateTo: String? = null,
 )

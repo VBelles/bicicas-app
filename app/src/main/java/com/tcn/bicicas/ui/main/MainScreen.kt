@@ -69,7 +69,7 @@ data class Screen(
 )
 
 @Composable
-fun MainScreen(mapState: MapState<Station>) {
+fun MainScreen(mapState: MapState<Station>, hideSplashScreen: () -> Unit) {
     val settingsViewModel: SettingsViewModel = getViewModel()
     val settings by settingsViewModel.settingsState.collectAsState()
 
@@ -104,7 +104,8 @@ fun MainScreen(mapState: MapState<Station>) {
                 initialScreen = initialScreen,
                 mapState = mapState,
                 onSettingsClick = { settingsOpened = true },
-                onNavigatedToScreen = settingsViewModel::onLastScreenChanged
+                onNavigatedToScreen = settingsViewModel::onLastScreenChanged,
+                hideSplashScreen = hideSplashScreen,
             )
             AnimatedVisibility(
                 visible = settingsOpened,
@@ -124,6 +125,7 @@ private fun MainContent(
     mapState: MapState<Station>,
     onSettingsClick: () -> Unit,
     onNavigatedToScreen: (Int) -> Unit,
+    hideSplashScreen: () -> Unit,
 ) {
 
     val stationsViewModel: StationsViewModel = getViewModel()
@@ -134,12 +136,14 @@ private fun MainContent(
     val screens = remember {
         listOf(
             Screen(Icons.Rounded.Pin) { padding ->
+                hideSplashScreen()
                 PinScreen(padding)
             },
             Screen(Icons.Rounded.List) { padding ->
-                StationScreen(padding, stationsViewModel)
+                StationScreen(padding, stationsViewModel, hideSplashScreen)
             },
             Screen(Icons.Rounded.Map) { padding ->
+                hideSplashScreen()
                 MapScreen(padding, stationsViewModel, mapState)
             },
         )

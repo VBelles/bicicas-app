@@ -3,24 +3,53 @@ package com.tcn.bicicas.ui.settings
 import android.content.Context
 import android.os.Build
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
-import androidx.compose.material.Divider
-import androidx.compose.material.Switch
-import androidx.compose.material.SwitchDefaults
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumTopAppBar
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
@@ -29,14 +58,14 @@ import androidx.compose.ui.unit.dp
 import com.tcn.bicicas.BuildConfig
 import com.tcn.bicicas.R
 import com.tcn.bicicas.data.model.Settings
-import com.tcn.bicicas.ui.settings.licenses.LicensesScreen
-import com.tcn.bicicas.ui.theme.BarHeight
-import com.tcn.bicicas.ui.theme.BarTonalElevation
 import org.koin.androidx.compose.getViewModel
 
 
 @Composable
-fun SettingsScreen(onBackClicked: () -> Unit) {
+fun SettingsScreen(
+    onBackClicked: () -> Unit,
+    onNavigateToLicenses: () -> Unit,
+) {
     val viewModel: SettingsViewModel = getViewModel()
     val settings by viewModel.settingsState.collectAsState()
     SettingsScreen(
@@ -46,9 +75,11 @@ fun SettingsScreen(onBackClicked: () -> Unit) {
         onNavigationTypeChanged = viewModel::onNavigationTypeChanged,
         onDynamicColorEnabled = viewModel::onDynamicColorEnabled,
         onBackClicked = onBackClicked,
+        onNavigateToLicenses = onNavigateToLicenses,
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingsScreen(
     settings: Settings,
@@ -56,35 +87,28 @@ private fun SettingsScreen(
     onThemeChanged: (Int) -> Unit,
     onNavigationTypeChanged: (Int) -> Unit,
     onDynamicColorEnabled: (Boolean) -> Unit,
-    onBackClicked: () -> Unit
+    onBackClicked: () -> Unit,
+    onNavigateToLicenses: () -> Unit,
 ) {
     BackHandler(onBack = onBackClicked)
     val scrollState = rememberScrollState()
-    var licensesOpened by rememberSaveable { mutableStateOf(false) }
-    Box {
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .fillMaxSize()
-        ) {
-            SettingsTopAppBar(onBackClicked, scrollState.value > 10)
-            SettingsList(
-                settings = settings,
-                scrollState = scrollState,
-                onInitialScreenChanged = onInitialScreenChanged,
-                onThemeChanged = onThemeChanged,
-                onNavigationTypeChanged = onNavigationTypeChanged,
-                onDynamicColorEnabled = onDynamicColorEnabled,
-                onLicensesClicked = { licensesOpened = true }
-            )
-        }
-        AnimatedVisibility(
-            visible = licensesOpened,
-            enter = slideInVertically(tween()) { it },
-            exit = slideOutVertically(tween()) { it },
-        ) {
-            LicensesScreen { licensesOpened = false }
-        }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = { SettingsTopAppBar(scrollBehavior, onBackClicked) },
+        contentWindowInsets = WindowInsets.statusBars
+    ) { padding ->
+        SettingsList(
+            settings = settings,
+            scrollState = scrollState,
+            onInitialScreenChanged = onInitialScreenChanged,
+            onThemeChanged = onThemeChanged,
+            onNavigationTypeChanged = onNavigationTypeChanged,
+            onDynamicColorEnabled = onDynamicColorEnabled,
+            onLicensesClicked = onNavigateToLicenses,
+            modifier = Modifier.padding(padding)
+        )
     }
 }
 
@@ -97,9 +121,10 @@ private fun SettingsList(
     onNavigationTypeChanged: (Int) -> Unit,
     onDynamicColorEnabled: (Boolean) -> Unit,
     onLicensesClicked: () -> Unit,
+    modifier: Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .verticalScroll(scrollState)
             .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal))
@@ -140,7 +165,7 @@ private fun ThemeSection(
     )
     SettingItemSelectBetween(
         title = stringResource(R.string.settings_item_theme),
-        options = Settings.Theme.values().map { getThemeName(context, it) },
+        options = Settings.Theme.entries.map { getThemeName(context, it) },
         selectedOption = settings.theme.ordinal,
         onOptionSelected = onThemeChanged,
     )
@@ -171,14 +196,14 @@ fun NavigationSection(
 
     SettingItemSelectBetween(
         title = stringResource(R.string.settings_item_initial_screen),
-        options = Settings.InitialScreen.values().map { getScreenName(context, it) },
+        options = Settings.InitialScreen.entries.map { getScreenName(context, it) },
         selectedOption = settings.initialScreen.ordinal,
         onOptionSelected = onInitialScreenChanged,
     )
 
     SettingItemSelectBetween(
         title = stringResource(R.string.settings_item_navigation_type),
-        options = Settings.NavigationType.values()
+        options = Settings.NavigationType.entries
             .map { getNavigationTypeName(context, it) },
         selectedOption = settings.navigationType.ordinal,
         onOptionSelected = onNavigationTypeChanged,
@@ -250,7 +275,6 @@ private fun getNavigationTypeName(context: Context, navigationType: Settings.Nav
         Settings.NavigationType.Tabs -> context.getString(R.string.settings_option_tabs)
     }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingItem(
     title: String,
@@ -283,7 +307,6 @@ private fun SettingItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SettingItemSelectBetween(
     title: String,
@@ -341,45 +364,24 @@ private fun SettingItemToggle(
 ) {
     SettingItem(title, subtitle, { onToggle(!enabled) }) {
         Switch(
-            checked = enabled, onCheckedChange = onToggle,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                uncheckedTrackColor = MaterialTheme.colorScheme.onSurface
-            )
+            checked = enabled,
+            onCheckedChange = onToggle,
         )
     }
 }
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SettingsTopAppBar(onBackClicked: () -> Unit, elevated: Boolean) {
-    val elevation by animateDpAsState(targetValue = if (elevated) BarTonalElevation else 0.dp)
-    Surface(tonalElevation = elevation) {
-        Box(
-            modifier = Modifier
-                .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top))
-                .height(BarHeight)
-                .padding(horizontal = 8.dp)
-                .fillMaxWidth()
-        ) {
+private fun SettingsTopAppBar(scrollBehavior: TopAppBarScrollBehavior, onBackClicked: () -> Unit) {
+    MediumTopAppBar(
+        navigationIcon = {
             IconButton(
                 onClick = onBackClicked,
-                modifier = Modifier.align(Alignment.CenterStart),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.ArrowBack,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.align(Alignment.Center),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                content = { Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = null) }
             )
-        }
-
-    }
+        },
+        title = { Text(text = stringResource(R.string.settings_title)) },
+        scrollBehavior = scrollBehavior,
+    )
 }

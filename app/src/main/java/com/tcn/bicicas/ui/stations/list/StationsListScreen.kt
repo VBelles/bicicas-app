@@ -1,7 +1,7 @@
 package com.tcn.bicicas.ui.stations.list
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,21 +16,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.CircularProgressIndicator
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.SnackbarHost
-import androidx.compose.material.SnackbarHostState
-import androidx.compose.material.SnackbarResult
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Warning
-import androidx.compose.material.pullrefresh.PullRefreshIndicator
-import androidx.compose.material.pullrefresh.pullRefresh
-import androidx.compose.material.pullrefresh.rememberPullRefreshState
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,13 +40,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tcn.bicicas.R
 import com.tcn.bicicas.ui.components.plus
+import com.tcn.bicicas.ui.components.pullrefresh.PullRefreshIndicator
+import com.tcn.bicicas.ui.components.pullrefresh.pullRefresh
+import com.tcn.bicicas.ui.components.pullrefresh.rememberPullRefreshState
 import com.tcn.bicicas.ui.stations.StationItem
 import com.tcn.bicicas.ui.stations.StationsState
 import com.tcn.bicicas.ui.stations.StationsViewModel
@@ -65,7 +67,6 @@ import kotlin.ranges.contains
 fun StationScreen(
     contentPadding: PaddingValues = PaddingValues(),
     viewModel: StationsViewModel,
-    hideSplashScreen: () -> Unit,
 ) {
     val stationsState: StationsState by viewModel.state.collectAsState()
     StationsScreen(
@@ -75,7 +76,6 @@ fun StationScreen(
         onRefresh = viewModel::onRefresh,
         onFavoriteClicked = viewModel::onFavoriteClicked,
         onMapClicked = viewModel::onMapClicked,
-        hideSplashScreen = hideSplashScreen,
     )
 }
 
@@ -87,13 +87,8 @@ fun StationsScreen(
     onRefresh: () -> Unit,
     onFavoriteClicked: (String) -> Unit,
     onMapClicked: (String) -> Unit,
-    hideSplashScreen: () -> Unit,
 ) {
     val snackBarHostState = remember { SnackbarHostState() }
-
-    if (stationsState.hasLoaded) {
-        hideSplashScreen()
-    }
 
     val loadingErrorText = stringResource(R.string.stations_list_loading_error)
     val loadingErrorAction = stringResource(R.string.stations_list_loading_error_retry)
@@ -107,28 +102,34 @@ fun StationsScreen(
         }
     }
 
-    Surface {
-        Box(Modifier.fillMaxSize()) {
-            if (stationsState.stations.isEmpty()) {
-                StationsListEmpty(contentPadding, stationsState.isLoading, onRefresh)
-            } else {
-                StationsListContent(
-                    contentPadding = contentPadding,
-                    stationsState = stationsState,
-                    onRefresh = onRefresh,
-                    onFavoriteClicked = onFavoriteClicked,
-                    onMapClicked = onMapClicked,
-                )
-            }
-            SnackbarHost(
-                hostState = snackBarHostState,
-                modifier = Modifier
-                    .padding(contentPadding)
-                    .align(Alignment.BottomCenter)
+    val pullRefreshState = rememberPullRefreshState(stationsState.isLoading, onRefresh)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        if (stationsState.stations.isEmpty()) {
+            StationsListEmpty(contentPadding, stationsState.isLoading, onRefresh)
+        } else {
+            StationsListContent(
+                contentPadding = contentPadding,
+                stationsState = stationsState,
+                onFavoriteClicked = onFavoriteClicked,
+                onMapClicked = onMapClicked,
             )
         }
+        SnackbarHost(
+            hostState = snackBarHostState,
+            modifier = Modifier
+                .padding(contentPadding)
+                .align(Alignment.BottomCenter)
+        )
+        PullRefreshIndicator(
+            refreshing = stationsState.isLoading,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+        )
     }
-
 }
 
 @Composable
@@ -187,80 +188,74 @@ fun StationsListEmpty(
 }
 
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun StationsListContent(
     contentPadding: PaddingValues = PaddingValues(),
     stationsState: StationsState,
-    onRefresh: () -> Unit,
     onFavoriteClicked: (String) -> Unit,
     onMapClicked: (String) -> Unit,
 ) {
-    val pullRefreshState = rememberPullRefreshState(stationsState.isLoading, onRefresh)
-    Box(
-        modifier = Modifier
-            .pullRefresh(pullRefreshState)
-            .background(MaterialTheme.colorScheme.background)
-            .fillMaxSize(),
+    val listState = rememberLazyListState()
+    val topDivider = if (listState.canScrollBackward) DividerDefaults.color else Color.Transparent
+    val botDivider = if (listState.canScrollForward) DividerDefaults.color else Color.Transparent
+    val topDividerColor by animateColorAsState(topDivider, label = "Top divider")
+    val botDividerColor by animateColorAsState(botDivider, label = "Bottom divider")
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.drawWithContent {
+            drawContent()
+            drawLine(topDividerColor, Offset.Zero, Offset(size.width, 0f))
+            drawLine(botDividerColor, Offset(0f, size.height), Offset(size.width, size.height))
+        },
+        contentPadding = contentPadding + PaddingValues(vertical = 16.dp),
     ) {
-        LazyColumn(
-            contentPadding = contentPadding.plus(
-                PaddingValues(vertical = 16.dp),
-                LocalLayoutDirection.current
-            ),
-        ) {
+        var favoriteTitleDisplayed = false
+        var titleDisplayed = false
 
-            var favoriteTitleDisplayed = false
-            var titleDisplayed = false
+        item {
+            StationsStatus(stationsState.secondsSinceLastUpdate)
+        }
 
-            item {
-                StationsStatus(stationsState.secondsSinceLastUpdate)
-            }
-
-            stationsState.stations.forEach { station ->
-                if (station.favorite && !favoriteTitleDisplayed) {
-                    item(R.string.stations_title_benches_fav) {
-                        StationsTitle(
-                            text = stringResource(R.string.stations_title_benches_fav),
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .animateItemPlacement()
-                        )
-                    }
-                    favoriteTitleDisplayed = true
-                }
-                if (!station.favorite && !titleDisplayed) {
-                    item(R.string.stations_title_benches) {
-                        StationsTitle(
-                            text = stringResource(R.string.stations_title_benches),
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .animateItemPlacement()
-                        )
-                    }
-                    titleDisplayed = true
-                }
-
-                item(station.id) {
-                    var expanded by rememberSaveable { mutableStateOf(false) }
-                    StationItem(
-                        station = station,
-                        expanded = expanded,
-                        onClick = { expanded = !expanded },
-                        onMapClicked = { onMapClicked(station.id) },
-                        onFavoriteClicked = { onFavoriteClicked(station.id) },
+        stationsState.stations.forEach { station ->
+            if (station.favorite && !favoriteTitleDisplayed) {
+                item(R.string.stations_title_benches_fav) {
+                    StationsTitle(
+                        text = stringResource(R.string.stations_title_benches_fav),
                         modifier = Modifier
-                            .padding(vertical = 4.dp, horizontal = 8.dp)
-                            .animateItemPlacement(),
+                            .padding(8.dp)
+                            .animateItemPlacement()
                     )
                 }
+                favoriteTitleDisplayed = true
+            }
+            if (!station.favorite && !titleDisplayed) {
+                item(R.string.stations_title_benches) {
+                    StationsTitle(
+                        text = stringResource(R.string.stations_title_benches),
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .animateItemPlacement()
+                    )
+                }
+                titleDisplayed = true
+            }
+
+            item(station.id) {
+                var expanded by rememberSaveable { mutableStateOf(false) }
+                StationItem(
+                    station = station,
+                    expanded = expanded,
+                    onClick = { expanded = !expanded },
+                    onMapClicked = { onMapClicked(station.id) },
+                    onFavoriteClicked = { onFavoriteClicked(station.id) },
+                    modifier = Modifier
+                        .padding(vertical = 4.dp, horizontal = 8.dp)
+                        .animateItemPlacement(),
+                )
             }
         }
-        PullRefreshIndicator(
-            stationsState.isLoading,
-            pullRefreshState,
-            Modifier.align(Alignment.TopCenter)
-        )
     }
 }
 
@@ -313,7 +308,6 @@ private fun StationsTitle(text: String, modifier: Modifier) {
     )
 }
 
-
 @Preview
 @Composable
 fun StationsScreenPreview() {
@@ -324,7 +318,6 @@ fun StationsScreenPreview() {
             onRefresh = {},
             onFavoriteClicked = {},
             onMapClicked = {},
-            hideSplashScreen = {},
         )
     }
 }

@@ -1,7 +1,11 @@
 package com.tcn.bicicas.ui.pin
 
 import android.content.res.Configuration
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -29,9 +33,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,6 +46,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -246,7 +253,6 @@ private fun LandscapePinContent(state: PinState, onLogoutButtonClicked: () -> Un
             Text(stringResource(R.string.pin_logout))
         }
 
-
         Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center) {
             Spacer(Modifier.weight(0.25f / 4f))
             Box(
@@ -265,10 +271,15 @@ private fun LandscapePinContent(state: PinState, onLogoutButtonClicked: () -> Un
                     .fillMaxHeight(0.8f)
                     .aspectRatio(1f, true)
             ) {
-                CountDownIndicator(progress = state.progress, stroke = 12.dp)
-                Crossfade(state.timeText, modifier = Modifier.align(Alignment.Center)) { state ->
-                    AutoSizeText(state ?: "", style = MaterialTheme.typography.headlineMedium)
-                }
+                CountDownIndicator(
+                    progress = state.progress,
+                    stroke = 12.dp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+                AnimatedCounter(
+                    count = state.timeText.orEmpty(),
+                    style = MaterialTheme.typography.headlineMedium,
+                )
             }
             Spacer(Modifier.weight(0.25f / 4f))
             Box(
@@ -304,12 +315,10 @@ private fun UserText(userNumber: String?, modifier: Modifier = Modifier) {
 private fun PinText(pin: String?, nextPin: String?, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(stringResource(R.string.pin_label_pin), style = MaterialTheme.typography.titleMedium)
-        Crossfade(pin) { state ->
-            AutoSizeText(
-                text = state ?: "",
-                style = MaterialTheme.typography.displayLarge.copy(fontSize = 48.sp)
-            )
-        }
+        AnimatedCounter(
+            count = pin.orEmpty(),
+            style = MaterialTheme.typography.displayLarge.copy(fontSize = 48.sp),
+        )
         Row(Modifier.offset((-6).dp)) {
             Icon(
                 imageVector = Icons.Rounded.Undo,
@@ -320,11 +329,44 @@ private fun PinText(pin: String?, nextPin: String?, modifier: Modifier = Modifie
                     .rotate(225f)
             )
             Spacer(modifier = Modifier.width(2.dp))
-            Crossfade(nextPin) { state ->
-                AutoSizeText(
-                    text = state ?: "",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.alpha(0.5f)
+            AnimatedCounter(
+                count = nextPin.orEmpty(),
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.alpha(0.5f)
+            )
+        }
+    }
+}
+
+
+@Composable
+fun AnimatedCounter(
+    count: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodyMedium
+) {
+    var oldCount by remember { mutableStateOf(count) }
+    SideEffect {
+        oldCount = count
+    }
+    Row(modifier = modifier) {
+        for (i in count.indices) {
+            val oldChar = oldCount.getOrNull(i)
+            val newChar = count[i]
+            val char = if (oldChar == newChar) {
+                oldCount[i]
+            } else {
+                count[i]
+            }
+            AnimatedContent(
+                targetState = char,
+                transitionSpec = { slideInVertically { it } togetherWith slideOutVertically { -it } },
+                label = "counter"
+            ) { c ->
+                Text(
+                    text = c.toString(),
+                    style = style,
+                    softWrap = false
                 )
             }
         }

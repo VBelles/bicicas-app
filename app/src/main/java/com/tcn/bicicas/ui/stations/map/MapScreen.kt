@@ -9,17 +9,33 @@ import android.graphics.Canvas
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import android.view.ViewGroup
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GpsOff
 import androidx.compose.material3.Icon
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,9 +49,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -76,7 +89,6 @@ fun MapScreen(
     )
 }
 
-
 @Composable
 fun MapScreen(
     mapState: MapState<Station>,
@@ -95,13 +107,12 @@ fun MapScreen(
     }
 
     val density = LocalDensity.current
-    val layoutDirection = LocalLayoutDirection.current
     val isPortrait = LocalConfiguration.current.orientation == ORIENTATION_PORTRAIT
 
-    var mapPadding: PaddingValues by remember(contentPadding) { mutableStateOf(contentPadding) }
+    var mapPadding: PaddingValues by remember { mutableStateOf(PaddingValues()) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        MapViewContainer(mapState, mapPadding, stations, stationToNavigate) { id ->
+        MapViewContainer(mapState, contentPadding + mapPadding, stations, stationToNavigate) { id ->
             selectedStationId = id
             onNavigatedToStation()
         }
@@ -110,6 +121,7 @@ fun MapScreen(
             mapView = mapState.mapView,
             activeFlow = activeFlow,
             modifier = Modifier
+                .padding(contentPadding)
                 .padding(mapPadding)
                 .align(Alignment.TopEnd)
         )
@@ -121,10 +133,7 @@ fun MapScreen(
                 modifier = Modifier
                     .padding(contentPadding)
                     .onSizeChanged { size ->
-                        mapPadding = contentPadding.plus(
-                            PaddingValues(bottom = with(density) { size.height.toDp() }),
-                            layoutDirection
-                        )
+                        mapPadding = PaddingValues(bottom = with(density) { size.height.toDp() })
                     }
                     .align(Alignment.BottomCenter),
 
@@ -136,10 +145,7 @@ fun MapScreen(
                 modifier = Modifier
                     .padding(contentPadding)
                     .onSizeChanged { size ->
-                        mapPadding = contentPadding.plus(
-                            PaddingValues(end = with(density) { size.width.toDp() }),
-                            layoutDirection
-                        )
+                        mapPadding = PaddingValues(end = with(density) { size.width.toDp() })
                     }
                     .align(Alignment.TopEnd),
             )
@@ -148,7 +154,6 @@ fun MapScreen(
 
 }
 
-@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun LocationPermissionButton(
     mapView: MapView,
@@ -157,7 +162,8 @@ fun LocationPermissionButton(
 ) {
     // Request location permission
     val permissionState = rememberPermissionState(Manifest.permission.ACCESS_FINE_LOCATION)
-    if (!permissionState.status.isGranted) {
+    val isLocationEnabled by permissionState.isGranted
+    if (!isLocationEnabled) {
         Box(modifier = modifier
             .padding(12.dp)
             .size(40.dp)
@@ -178,10 +184,10 @@ fun LocationPermissionButton(
 
     // When permission is granted and app is active to avoid problems with collecting location on
     // background
-    LaunchedEffect(mapView, permissionState.status.isGranted, activeFlow) {
+    LaunchedEffect(mapView, isLocationEnabled, activeFlow) {
         activeFlow.collect { active ->
             @SuppressLint("MissingPermission")
-            mapView.awaitMap().isMyLocationEnabled = permissionState.status.isGranted && active
+            mapView.awaitMap().isMyLocationEnabled = isLocationEnabled && active
         }
     }
 }
@@ -293,8 +299,7 @@ fun MapViewContainer(
         padding.calculateEndPadding(LocalLayoutDirection.current).toPx()
     }
     LaunchedEffect(map, topPadding, bottomPadding, startPadding, endPadding) {
-        val googleMap = map.awaitMap()
-        googleMap.setPadding(
+        map.awaitMap().setPadding(
             startPadding.toInt(),
             topPadding.toInt(),
             endPadding.toInt(),

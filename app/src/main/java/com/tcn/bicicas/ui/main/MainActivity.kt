@@ -1,5 +1,7 @@
 package com.tcn.bicicas.ui.main
 
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -23,7 +25,24 @@ class MainActivity : ComponentActivity() {
             this, lifecycle, savedInstanceState, MapMarkerAdapter<Station>(), R.id.map
         )
 
-        setContent { MainScreen(mapState, hideSplashScreen) }
+        val insetsController =
+            WindowCompat.getInsetsController(window, findViewById(android.R.id.content))
+        val updateSystemUiTheme = { darkMode: Boolean, navigationBarContrastEnforced: Boolean ->
+            if (Build.VERSION.SDK_INT > 23) {
+                insetsController.isAppearanceLightStatusBars = !darkMode
+            } else {
+                val veil = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+                window.statusBarColor = if (darkMode) Color.TRANSPARENT else veil
+            }
+            if (Build.VERSION.SDK_INT < 26 || navigationBarContrastEnforced) {
+                val veil = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+                window.navigationBarColor = if (darkMode) Color.TRANSPARENT else veil
+            } else {
+                insetsController.isAppearanceLightNavigationBars = !darkMode
+            }
+        }
+
+        setContent { MainScreen(mapState, hideSplashScreen, updateSystemUiTheme) }
     }
 }
 

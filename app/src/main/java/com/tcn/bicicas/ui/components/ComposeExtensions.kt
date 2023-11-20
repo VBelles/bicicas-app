@@ -3,12 +3,14 @@ package com.tcn.bicicas.ui.components
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalLayoutDirection
 
-fun PaddingValues.plus(
+@Composable
+operator fun PaddingValues.plus(
     paddingValues: PaddingValues,
-    layoutDirection: LayoutDirection
 ): PaddingValues {
+    val layoutDirection = LocalLayoutDirection.current
     return PaddingValues(
         top = calculateTopPadding() + paddingValues.calculateTopPadding(),
         bottom = calculateBottomPadding() + paddingValues.calculateBottomPadding(),

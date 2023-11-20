@@ -13,7 +13,7 @@ class SettingsViewModel(
 
     fun onInitialScreenChanged(option: Int) {
         settingsRepository.update(
-            settingsState.value.copy(initialScreen = Settings.InitialScreen.values()[option])
+            settingsState.value.copy(initialScreen = Settings.InitialScreen.entries[option])
         )
     }
 
@@ -25,12 +25,12 @@ class SettingsViewModel(
 
     fun onNavigationTypeChanged(option: Int) {
         settingsRepository.update(
-            settingsState.value.copy(navigationType = Settings.NavigationType.values()[option])
+            settingsState.value.copy(navigationType = Settings.NavigationType.entries[option])
         )
     }
 
     fun onThemeChanged(option: Int) {
-        settingsRepository.update(settingsState.value.copy(theme = Settings.Theme.values()[option]))
+        settingsRepository.update(settingsState.value.copy(theme = Settings.Theme.entries[option]))
     }
 
     fun onDynamicColorEnabled(enabled: Boolean) {

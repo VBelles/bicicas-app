@@ -1,6 +1,14 @@
 package com.tcn.bicicas.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -11,7 +19,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
@@ -22,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ScrollableAlertDialog(
     onDismissRequest: () -> Unit,
@@ -44,9 +50,7 @@ fun ScrollableAlertDialog(
                 .padding(bottom = 24.dp)
         ) {
             Column(Modifier.padding(start = 24.dp, top = 24.dp, end = 24.dp, bottom = 0.dp)) {
-                ProvideTextStyle(MaterialTheme.typography.headlineSmall) {
-                    title()
-                }
+                ProvideTextStyle(MaterialTheme.typography.headlineSmall, title)
                 Spacer(modifier = Modifier.height(16.dp))
                 val scrollState = rememberScrollState()
                 Box(modifier = Modifier
@@ -67,9 +71,7 @@ fun ScrollableAlertDialog(
 
                     Box(Modifier.verticalScroll(scrollState)) {
                         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
-                            ProvideTextStyle(MaterialTheme.typography.bodyMedium) {
-                                text()
-                            }
+                            ProvideTextStyle(MaterialTheme.typography.bodyMedium, text)
                         }
                     }
                 }

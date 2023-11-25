@@ -3,6 +3,8 @@ plugins {
     id 'org.jetbrains.kotlin.android'
     id 'com.google.android.libraries.mapsplatform.secrets-gradle-plugin'
     id 'com.mikepenz.aboutlibraries.plugin'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.9.20'
+    id "org.jetbrains.kotlin.plugin.atomicfu" version "1.9.20"
 }
 
 android {
@@ -75,10 +77,18 @@ dependencies {
     testImplementation 'io.insert-koin:koin-test-junit4:3.5.0'
 
     // Network
-    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
-    implementation 'com.squareup.okhttp3:logging-interceptor:4.12.0'
-    testImplementation 'com.squareup.okhttp3:mockwebserver:4.12.0'
+    implementation "io.ktor:ktor-client-okhttp:2.3.6"
+    testImplementation "io.ktor:ktor-client-mock:2.3.6"
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
     testImplementation 'org.json:json:20231013'
+
+    // Local storage
+    implementation("com.squareup.okio:okio:3.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-okio:1.6.1")
+    implementation("org.jetbrains.kotlinx:atomicfu:0.22.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+
 
     // Maps
     implementation 'com.google.android.gms:play-services-maps:18.2.0'

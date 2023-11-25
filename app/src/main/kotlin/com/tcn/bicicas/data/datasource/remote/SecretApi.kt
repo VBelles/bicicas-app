@@ -2,24 +2,49 @@ package com.tcn.bicicas.data.datasource.remote
 
 import com.tcn.bicicas.data.model.Token
 import com.tcn.bicicas.data.model.TwoFactorAuth
-import retrofit2.Response
-import retrofit2.http.GET
-import retrofit2.http.Header
-import retrofit2.http.POST
-import retrofit2.http.Query
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.request.get
+import io.ktor.client.request.header
+import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-interface SecretApi {
 
-    @POST("oauth/token")
-    suspend fun authenticate(
-        @Query("username") username: String,
-        @Query("password") password: String,
-        @Query("client_id") clientId: String,
-        @Query("client_secret") clientSecret: String,
-        @Query("grant_type") grantType: String,
-    ): Response<Token>
+@Serializable
+private class TokenResponse(
+    @SerialName("access_token") val accessToken: String
+)
 
-    @GET("dashboard")
-    suspend fun getTwoFactorAuth(@Header("Authorization") token: String): Response<TwoFactorAuth>
+suspend fun HttpClient.authenticate(
+    baseUrl: String,
+    username: String,
+    password: String,
+    clientId: String,
+    clientSecret: String,
+): Token = post("$baseUrl/oauth/token") {
+    parameter("username", username)
+    parameter("password", password)
+    parameter("client_id", clientId)
+    parameter("client_secret", clientSecret)
+    parameter("grant_type", "password")
+}.body<TokenResponse>().let { response -> Token(response.accessToken) }
 
+@Serializable
+private class TwoFactorAuthResponse(
+    @SerialName("dasboard") val dashboard: Dashboard
+) {
+    @Serializable
+    class Dashboard(
+        @SerialName("user") val user: String,
+        @SerialName("secret") val secret: String,
+    )
 }
+
+suspend fun HttpClient.getTwoFactorAuth(baseUrl: String, token: String) =
+    get("$baseUrl/oauth/token") {
+        header("Authorization", "Bearer $token")
+    }.body<TwoFactorAuthResponse>().let { response ->
+        TwoFactorAuth(response.dashboard.user, response.dashboard.secret)
+    }

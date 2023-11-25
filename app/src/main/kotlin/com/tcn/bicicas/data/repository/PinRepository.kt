@@ -15,7 +15,7 @@ import pingenerator.api.PinGeneratorFactory
 
 class PinRepository(
     private val secretApi: SecretApi,
-    private val twoFactorStore: LocalStore<TwoFactorAuth>,
+    private val store: Store<TwoFactorAuth>,
     private val clientId: String,
     private val clientSecret: String,
 ) {

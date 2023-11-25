@@ -13,7 +13,7 @@ data class Station(
     val incidents: Int,
     val anchors: List<Anchor>,
     val online: Boolean,
-    val lastSeen: Date,
+    val lastSeen: Long,
     val latitude: Double,
     val longitude: Double,
     val favorite: Boolean,
@@ -25,5 +25,4 @@ data class Station(
         val isElectric: Boolean,
         val hasIncident: Boolean
     )
-
 }

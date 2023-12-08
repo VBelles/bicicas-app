@@ -16,8 +16,8 @@ android {
         applicationId "com.tcn.bicicas"
         minSdk 21
         targetSdk 34
-        versionCode 2010
-        versionName "2.0.1"
+        versionCode 2020
+        versionName "2.0.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -30,6 +30,10 @@ android {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix "-debug"
         }
     }
     compileOptions {
@@ -49,6 +53,7 @@ android {
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
+            excludes += '/META-INF/versions/**'
         }
     }
 }
@@ -65,30 +70,28 @@ dependencies {
     implementation platform('androidx.compose:compose-bom:2023.10.01')
     implementation "androidx.compose.foundation:foundation"
     implementation "androidx.compose.ui:ui"
-    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material3:material3:1.2.0-alpha12'
     implementation "androidx.compose.material:material-icons-extended"
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation 'androidx.navigation:navigation-compose:2.7.5'
-
-    // Dependency injection
-    implementation 'io.insert-koin:koin-android:3.5.0'
-    implementation 'io.insert-koin:koin-androidx-compose:3.5.0'
-    testImplementation 'io.insert-koin:koin-test:3.5.0'
-    testImplementation 'io.insert-koin:koin-test-junit4:3.5.0'
-
+    debugImplementation "androidx.compose.ui:ui-tooling"
+    debugImplementation "androidx.compose.ui:ui-test-manifest"
     // Network
-    implementation "io.ktor:ktor-client-okhttp:2.3.6"
-    testImplementation "io.ktor:ktor-client-mock:2.3.6"
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.1")
-    testImplementation 'org.json:json:20231013'
+    implementation "io.ktor:ktor-client-okhttp:3.0.0-beta-1"
+    implementation "io.ktor:ktor-client-logging:3.0.0-beta-1"
+    implementation "io.ktor:ktor-client-content-negotiation:3.0.0-beta-1"
+    implementation "io.ktor:ktor-serialization-kotlinx-json:3.0.0-beta-1"
+    testImplementation "io.ktor:ktor-client-mock:3.0.0-beta-1"
 
     // Local storage
     implementation("com.squareup.okio:okio:3.6.0")
+    implementation("com.squareup.okio:okio-fakefilesystem:3.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json-okio:1.6.1")
     implementation("org.jetbrains.kotlinx:atomicfu:0.22.0")
 
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
-
+    implementation("com.soywiz.korlibs.krypto:krypto:4.0.10")
+    implementation("io.matthewnelson.encoding:base32:2.0.0")
 
     // Maps
     implementation 'com.google.android.gms:play-services-maps:18.2.0'
@@ -100,18 +103,11 @@ dependencies {
     // OS Licenses
     implementation 'com.mikepenz:aboutlibraries-core:10.9.2'
 
-    // If PIN_GENERATOR_LIB_PATH is not found then a dummy library is used for pin generation
-    Properties properties = new Properties()
-    properties.load(project.rootProject.file('local.properties').newDataInputStream())
-    def pinGeneratorLibPath = properties.getProperty('PIN_GENERATOR_LIB_PATH') ?: 'libs/bicicas-pin-generator-dummy.jar'
-    implementation files(pinGeneratorLibPath)
-
+    // Testing
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'
     testImplementation 'app.cash.turbine:turbine:1.0.0'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation "androidx.compose.ui:ui-test-junit4:1.5.4"
-    debugImplementation "androidx.compose.ui:ui-tooling"
-    debugImplementation "androidx.compose.ui:ui-test-manifest"
 }

@@ -12,6 +12,4 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Bicicas"
 include ':app'
-include ':pin'

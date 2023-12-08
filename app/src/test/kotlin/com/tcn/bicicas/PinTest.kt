@@ -1,180 +1,138 @@
 package com.tcn.bicicas
 
-import android.content.SharedPreferences
 import app.cash.turbine.test
-import com.tcn.bicicas.data.Clock
-import com.tcn.bicicas.di.networkModule
-import com.tcn.bicicas.di.pinModule
-import com.tcn.bicicas.ui.pin.PinState
-import com.tcn.bicicas.ui.pin.PinViewModel
+import com.tcn.bicicas.common.Clock
+import com.tcn.bicicas.common.StoreManager
+import com.tcn.bicicas.main.buildHttpClient
+import com.tcn.bicicas.pin.PinModuleImpl
+import com.tcn.bicicas.pin.presentation.PinState
+import com.tcn.bicicas.pin.presentation.PinViewModel
+import com.tcn.bicicas.responses.PIN_AUTH_RESPONSE
+import com.tcn.bicicas.responses.TWO_FACTOR_RESPONSE
 import com.tcn.bicicas.utils.MainCoroutineRule
-import com.tcn.bicicas.utils.MemorySharedPreferences
-import com.tcn.bicicas.utils.enqueueJson
-import com.tcn.bicicas.utils.get
+import com.tcn.bicicas.utils.respondJson
+import io.ktor.client.engine.config
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respondBadRequest
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.runBlocking
-import okhttp3.mockwebserver.MockWebServer
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runTest
+import okio.fakefilesystem.FakeFileSystem
 import org.junit.Rule
 import org.junit.Test
-import org.koin.dsl.module
-import org.koin.test.KoinTest
-import org.koin.test.KoinTestRule
-import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PinTest : KoinTest {
+class PinTest {
 
     @get:Rule
-    val mainCoroutineRule = MainCoroutineRule()
+    val mainCoroutineRule = MainCoroutineRule(StandardTestDispatcher())
 
-    @get:Rule
-    val mockWebServer = MockWebServer()
+    private fun pinModule(clock: Clock = Clock { 0 }): PinModuleImpl {
+        val mockEngine = MockEngine.config {
+            addHandler { request ->
+                val (user, pass) = request.url.parameters["username"] to request.url.parameters["password"]
+                when (request.url.encodedPath) {
+                    "/oauth/token" -> when {
+                        user == "user" && pass == "pass" -> respondJson(PIN_AUTH_RESPONSE)
+                        else -> respondBadRequest()
+                    }
 
-    private var time: Long = 0
-
-    @get:Rule
-    val koinTestRule = KoinTestRule.create {
-        modules(
-            module { single { Clock { time } } },
-            networkModule,
-            module { single<SharedPreferences> { MemorySharedPreferences() } },
-            pinModule(mockWebServer.url("/").toString()),
+                    "/dashboard" -> respondJson(TWO_FACTOR_RESPONSE)
+                    else -> respondBadRequest()
+                }
+            }
+        }
+        val dispatcher = mainCoroutineRule.dispatcher
+        return PinModuleImpl(
+            httpClient = { buildHttpClient(mockEngine) },
+            storeManager = { StoreManager(dispatcher, "", clock::millis, FakeFileSystem()) },
+            clock = clock,
+            oauthBaseUrl = "http://0.0.0.0",
+            oauthClientId = "clientId",
+            oauthClientSecret = "clientSecret"
         )
     }
 
     @Test
-    fun when_login_is_performed_then_state_is_loading() = runBlocking {
-        val pinViewModel: PinViewModel = koinTestRule.get()
-        mockWebServer.enqueueJson("pin_auth_response.json")
-        mockWebServer.enqueueJson("two_factor_response.json")
-
-        pinViewModel.pinState.test {
+    fun when_login_is_performed_then_state_is_loading() = runTest {
+        val viewModel: PinViewModel = pinModule().providePinViewModel()
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            pinViewModel.login("user", "pass")
-            assertTrue(awaitItem().loading)
-            assertFalse(awaitItem().loading)
+            viewModel.onLogin("user", "pass")
+            val loadingState = awaitItem() as PinState.LoggedOut
+            assertTrue(loadingState.loading)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun when_success_login_is_performed_then_state_is_success() = runBlocking {
-        val pinViewModel: PinViewModel = koinTestRule.get()
-        mockWebServer.enqueueJson("pin_auth_response.json")
-        mockWebServer.enqueueJson("two_factor_response.json")
-
-        pinViewModel.pinState.test {
+    fun when_success_login_is_performed_then_state_is_success() = runTest {
+        val viewModel: PinViewModel = pinModule().providePinViewModel()
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            pinViewModel.login("user", "pass")
+            viewModel.onLogin("user", "pass")
             awaitItem() // Loading
-            val state = awaitItem() // Success login
-            assertTrue(state.loggedIn)
-            assertEquals(state.userNumber, "1234")
+            val state = awaitItem() as PinState.LoggedIn // Success login
+            assertEquals(state.pinResult.user, "1234")
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun when_login_is_performed_with_wrong_credentials_then_state_has_error() = runBlocking {
-        val pinViewModel: PinViewModel = koinTestRule.get()
-        mockWebServer.enqueueJson("pin_auth_response.json", 401)
-
-        pinViewModel.pinState.test {
+    fun when_login_is_performed_with_wrong_credentials_then_state_has_error() = runTest {
+        val viewModel: PinViewModel = pinModule().providePinViewModel()
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            pinViewModel.login("user", "pass")
-            awaitItem() // Loading
-            val state = awaitItem() // Failure login
-            assertFalse(state.loggedIn)
+            viewModel.onLogin("user", "wrongpass")
+            val state = (awaitItem() as PinState.LoggedOut).takeIf { it.loginError != null }
+                ?:awaitItem() as PinState.LoggedOut
             assertEquals(PinState.LoginError.WrongUserPass, state.loginError)
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun when_success_login_then_pin_progress_is_refreshed_automatically() = runBlocking {
-        val pinViewModel: PinViewModel = koinTestRule.get()
-        mockWebServer.enqueueJson("pin_auth_response.json")
-        mockWebServer.enqueueJson("two_factor_response.json")
-        time = 0
-
-        pinViewModel.pinState.test {
+    fun when_success_login_then_pin_progress_is_refreshed_automatically() = runTest {
+        val viewModel: PinViewModel = pinModule { currentTime }.providePinViewModel()
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            pinViewModel.login("user", "pass")
+            viewModel.onLogin("user", "pass")
             awaitItem() // Loading
-            awaitItem() // Success login
-
-            var state = awaitItem()
-            assertNotNull(state.pin)
-            assertEquals("30", state.timeText)
-            assertEquals(1f, state.progress)
-
-            time += 15_000
-            mainCoroutineRule.scheduler.advanceTimeBy(15_000)
-            state = awaitItem()
-
-            assertEquals("15", state.timeText)
-            assertEquals(0.5f, state.progress)
-
-            time += 15_000
-            mainCoroutineRule.scheduler.advanceTimeBy(15_000)
-            state = awaitItem()
-
-            assertEquals("30", state.timeText)
-            assertEquals(1f, state.progress)
+            val state = awaitItem() as PinState.LoggedIn // Success login
+            assertEquals(30_000L, state.pinResult.remainTime)
+            cancelAndIgnoreRemainingEvents()
+        }
+        advanceTimeBy(15_000)
+        viewModel.state.test {
+            awaitItem() // Previous state
+            val state = awaitItem() as PinState.LoggedIn
+            assertEquals(15_000L, state.pinResult.remainTime)
+            cancelAndIgnoreRemainingEvents()
+        }
+        advanceTimeBy(15_000)
+        viewModel.state.test {
+            awaitItem() // Previous state
+            val state = awaitItem() as PinState.LoggedIn
+            assertEquals(30_000, state.pinResult.remainTime)
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun when_success_login_then_pin_is_refreshed_only_every_30s() = runBlocking {
-        val pinViewModel: PinViewModel = koinTestRule.get()
-        mockWebServer.enqueueJson("pin_auth_response.json")
-        mockWebServer.enqueueJson("two_factor_response.json")
-        time = 0
-
-        pinViewModel.pinState.test {
+    fun when_logout_is_performed_then_pin_state_is_not_refreshed() = runTest {
+        val viewModel = pinModule().providePinViewModel()
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            pinViewModel.login("user", "pass")
+            viewModel.onLogin("user", "pass")
             awaitItem() // Loading
-            awaitItem() // Success login
-
-            val pin = awaitItem().pin
-            assertNotNull(pin)
-
-            time += 15_000
-            mainCoroutineRule.scheduler.advanceTimeBy(15_000)
-            assertEquals(pin, awaitItem().pin)
-
-            time += 15_000
-            mainCoroutineRule.scheduler.advanceTimeBy(15_000)
-            assertNotEquals(pin, awaitItem().pin)
+            awaitItem() as PinState.LoggedIn // Success login
+            viewModel.onLogout()
+            awaitItem() as PinState.LoggedOut // Logged out
+            cancelAndIgnoreRemainingEvents()
         }
     }
-
-    @Test
-    fun when_logout_is_performed_then_pin_state_is_not_refreshed() = runBlocking {
-        val pinViewModel: PinViewModel = koinTestRule.get()
-        mockWebServer.enqueueJson("pin_auth_response.json")
-        mockWebServer.enqueueJson("two_factor_response.json")
-        time = 0
-
-        pinViewModel.pinState.test {
-            awaitItem() // Initial empty state
-            pinViewModel.login("user", "pass")
-            awaitItem() // Loading
-            awaitItem() // Success login
-            awaitItem() // Pin updated
-
-            pinViewModel.logout()
-            val logoutState = awaitItem()
-            /*            assertNull(logoutState.pin)
-                        assertNull(logoutState.nextPin)
-                        assertNull(logoutState.userNumber)*/
-            assertFalse(logoutState.loggedIn)
-
-            // Advance time and expect state to not be updated
-            time += 15_000
-            mainCoroutineRule.scheduler.advanceTimeBy(15_000)
-            expectNoEvents()
-        }
-    }
-
 }

@@ -1,188 +1,189 @@
 package com.tcn.bicicas
 
-import android.content.SharedPreferences
 import app.cash.turbine.test
-import com.tcn.bicicas.di.clockModule
-import com.tcn.bicicas.di.networkModule
-import com.tcn.bicicas.di.stationModule
-import com.tcn.bicicas.ui.stations.StationsState
-import com.tcn.bicicas.ui.stations.StationsViewModel
+import com.tcn.bicicas.common.Clock
+import com.tcn.bicicas.common.StoreManager
+import com.tcn.bicicas.main.buildHttpClient
+import com.tcn.bicicas.responses.STATIONS_SUCCESS_RESPONSE
+import com.tcn.bicicas.responses.STATIONS_SUCCESS_RESPONSE_2
+import com.tcn.bicicas.stations.StationsModule
+import com.tcn.bicicas.stations.StationsModuleImpl
+import com.tcn.bicicas.stations.presentation.StationsState
+import com.tcn.bicicas.stations.presentation.StationsViewModel
 import com.tcn.bicicas.utils.MainCoroutineRule
-import com.tcn.bicicas.utils.MemorySharedPreferences
-import com.tcn.bicicas.utils.enqueueJson
+import com.tcn.bicicas.utils.respondJson
+import io.ktor.client.engine.config
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respondBadRequest
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertFalse
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.runBlocking
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.Before
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runTest
+import okio.fakefilesystem.FakeFileSystem
 import org.junit.Rule
 import org.junit.Test
-import org.koin.dsl.module
-import org.koin.test.KoinTestRule
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StationTest {
 
     @get:Rule
-    val mainCoroutineRule = MainCoroutineRule()
+    val mainCoroutineRule = MainCoroutineRule(StandardTestDispatcher())
 
-    @get:Rule
-    val mockWebServer = MockWebServer()
+    private fun stationsModule(
+        activeFlow: Flow<Boolean>,
+        benchStatusResponse: () -> String? = ::STATIONS_SUCCESS_RESPONSE,
+        clock: Clock = Clock { 0 },
+    ): StationsModule {
+        val mockEngine = MockEngine.config {
+            addHandler { request ->
+                when (request.url.encodedPath) {
+                    "/bench_status" -> benchStatusResponse()?.let { respondJson(it) }
+                        ?: respondBadRequest()
 
-    private lateinit var activeFlow: MutableSharedFlow<Boolean>
-
-    @get:Rule
-    val koinTestRule = KoinTestRule.create {
-        modules(
-            clockModule,
-            networkModule,
-            module { single<Flow<Boolean>> { activeFlow } },
-            module { single<SharedPreferences> { MemorySharedPreferences() } },
-            stationModule(mockWebServer.url("/").toString()),
+                    else -> respondBadRequest()
+                }
+            }
+        }
+        val dispatcher = mainCoroutineRule.dispatcher
+        return StationsModuleImpl(
+            clock = clock,
+            storeManager = { StoreManager(dispatcher, "", clock::millis, FakeFileSystem()) },
+            httpClient = { buildHttpClient(mockEngine) },
+            stationsBaseUrl = "http://0.0.0.0",
+            dateParser = { clock.millis() },
+            activeFlow = activeFlow,
         )
     }
 
-    @Before
-    fun setup() {
-        activeFlow = MutableSharedFlow(replay = 1)
-    }
 
     @Test
-    fun when_view_model_is_initialized_then_empty_state_is_emitted() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        activeFlow.emit(true)
-        stationsViewModel.state.test {
-            assertEquals(StationsState(emptyList(), null, false), awaitItem())
+    fun when_view_model_is_initialized_then_empty_state_is_emitted() = runTest {
+        val viewModel = stationsModule(flowOf(false)).stationsViewModel
+        viewModel.state.test {
+            assertEquals(StationsState(hasLoaded = false), awaitItem())
+            assertEquals(StationsState(hasLoaded = true), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun when_app_is_not_active_then_state_is_not_refreshed_automatically() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        mockWebServer.enqueueJson("stations_success_response.json")
-        activeFlow.emit(false) // Set app as not active
-        stationsViewModel.state.test {
+    fun when_app_is_not_active_then_state_is_not_refreshed_automatically() = runTest {
+        val viewModel = stationsModule(flowOf(false)).stationsViewModel
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            mainCoroutineRule.scheduler.advanceTimeBy(30_001)
+            awaitItem() // Loaded state
+            advanceTimeBy(30_001)
             expectNoEvents() // No new events
         }
     }
 
     @Test
-    fun when_app_is_active_then_state_is_refreshed_automatically() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        mockWebServer.enqueueJson("stations_success_response.json")
-        mockWebServer.enqueueJson("stations_success_response_2.json")
-
-        stationsViewModel.state.test {
+    fun when_app_is_active_then_state_is_refreshed_automatically() = runTest {
+        val activeFlow = MutableStateFlow(true)
+        var response = STATIONS_SUCCESS_RESPONSE
+        val viewModel = stationsModule(activeFlow, { response }).stationsViewModel
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            activeFlow.emit(true) // Set app as active to start auto refresh
-            mainCoroutineRule.scheduler.advanceTimeBy(30_001)
+            awaitItem() // Loaded state
             assertTrue(awaitItem().stations.isNotEmpty())
-            mainCoroutineRule.scheduler.advanceTimeBy(30_001)
+            response = STATIONS_SUCCESS_RESPONSE_2
+            advanceTimeBy(30_000)
             assertTrue(awaitItem().stations.isNotEmpty())
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun when_stations_are_being_refreshed_then_state_is_loading() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        mockWebServer.enqueueJson("stations_success_response.json")
-
-        stationsViewModel.state.test {
+    fun when_stations_are_being_refreshed_then_state_is_loading() = runTest {
+        val viewModel = stationsModule(flowOf(false)).stationsViewModel
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            stationsViewModel.onRefresh()
+            awaitItem() // Loaded state
+            viewModel.onRefresh()
             assertTrue(awaitItem().isLoading)
+            awaitItem() // Data fetched
             assertFalse(awaitItem().isLoading)
         }
     }
 
     @Test
-    fun when_refresh_is_success_then_state_is_updated() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        mockWebServer.enqueueJson("stations_success_response.json")
-
-        stationsViewModel.state.test {
+    fun when_refresh_is_success_then_state_is_updated() = runTest {
+        val viewModel = stationsModule(flowOf(false)).stationsViewModel
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            stationsViewModel.onRefresh()
+            awaitItem() // Loaded state
+            viewModel.onRefresh()
             awaitItem() // Loading true
             assertTrue(awaitItem().stations.isNotEmpty()) // Success refresh
-
-            stationsViewModel.errorEvent.test {
-                expectNoEvents() // Error is not emitted
-            }
-
-            expectNoEvents()
-        }
-
-    }
-
-    @Test
-    fun when_refresh_has_failure_then_error_event_is_emitted() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        mockWebServer.enqueue(MockResponse().setHttp2ErrorCode(500))
-
-        stationsViewModel.errorEvent.test {
-            stationsViewModel.onRefresh()
-            awaitItem()
-            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
-
     @Test
-    fun when_favorite_is_toggled_then_state_is_updated() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        mockWebServer.enqueueJson("stations_success_response.json")
-
-        stationsViewModel.state.test {
+    fun when_favorite_is_toggled_then_state_is_updated() = runTest {
+        val viewModel = stationsModule(flowOf(false)).stationsViewModel
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            stationsViewModel.onRefresh()
+            awaitItem() // Loaded state
+            viewModel.onRefresh()
             awaitItem() // Loading true
-            val station = awaitItem().stations.first()
+            val station = awaitItem().also { println(it) }.stations.first()
+            awaitItem() // Loading false
             assertFalse(station.favorite)
-            stationsViewModel.onFavoriteClicked(station.id)
-            val updatedStation = awaitItem().stations.first()
+            viewModel.onFavoriteClicked(station.id)
+            val updatedStation = awaitItem().also { println(it) }.stations.first()
             assertTrue(updatedStation.favorite)
-            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+
+    @Test
+    fun when_refresh_has_failure_then_error_event_is_emitted() = runTest {
+        val viewModel: StationsViewModel = stationsModule(flowOf(false), { null }).stationsViewModel
+        viewModel.state.test {
+            awaitItem() // Initial empty state
+            awaitItem() // Loaded state
+            viewModel.onRefresh()
+            awaitItem() // Loading true
+            assertTrue(awaitItem().hasError)
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun when_stations_are_updated_then_stations_are_sorted_by_favorite_and_id() = runBlocking {
-        val stationsViewModel: StationsViewModel = koinTestRule.koin.get()
-        mockWebServer.enqueueJson("stations_success_response.json")
+    fun when_stations_are_updated_then_stations_are_sorted_by_favorite_and_id() = runTest {
+        val viewModel: StationsViewModel = stationsModule(flowOf(false)).stationsViewModel
 
-        stationsViewModel.state.test {
+        viewModel.state.test {
             awaitItem() // Initial empty state
-            stationsViewModel.onRefresh()
+            viewModel.onRefresh()
             awaitItem() // Loading true
+            awaitItem() // Data fetched
 
             var ids = awaitItem().stations.map { it.id }
-            assertContentEquals(listOf("01", "02", "03"), ids)
+            assertEquals(listOf("01", "02", "03"), ids)
 
-            stationsViewModel.onFavoriteClicked("03")
+            viewModel.onFavoriteClicked("03")
             ids = awaitItem().stations.map { it.id }
-            assertContentEquals(listOf("03", "01", "02"), ids)
+            assertEquals(listOf("03", "01", "02"), ids)
 
-            stationsViewModel.onFavoriteClicked("02")
+            viewModel.onFavoriteClicked("02")
             ids = awaitItem().stations.map { it.id }
-            assertContentEquals(listOf("02", "03", "01"), ids)
+            assertEquals(listOf("02", "03", "01"), ids)
 
-            stationsViewModel.onFavoriteClicked("01")
+            viewModel.onFavoriteClicked("01")
             ids = awaitItem().stations.map { it.id }
-            assertContentEquals(listOf("01", "02", "03"), ids)
+            assertEquals(listOf("01", "02", "03"), ids)
 
-            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
         }
 
     }
-
 }

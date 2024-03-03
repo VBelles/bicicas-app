@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -58,26 +59,26 @@ import com.google.maps.android.ktx.awaitAnimateCamera
 import com.google.maps.android.ktx.awaitMap
 import com.google.maps.android.ktx.model.markerOptions
 import com.tcn.bicicas.R
-import com.tcn.bicicas.stations.domain.model.Station
-import com.tcn.bicicas.stations.presentation.components.plus
-import com.tcn.bicicas.stations.presentation.components.StationItem
-import com.tcn.bicicas.stations.presentation.components.StationItemVertical
-import com.tcn.bicicas.stations.presentation.StationsViewModel
 import com.tcn.bicicas.main.theme.HighAvailabilityColor
 import com.tcn.bicicas.main.theme.LocalDarkTheme
 import com.tcn.bicicas.main.theme.LowAvailabilityColor
 import com.tcn.bicicas.main.theme.NoAvailabilityColor
+import com.tcn.bicicas.stations.StationsModule
+import com.tcn.bicicas.stations.domain.model.Station
+import com.tcn.bicicas.stations.presentation.components.StationItem
+import com.tcn.bicicas.stations.presentation.components.StationItemVertical
+import com.tcn.bicicas.stations.presentation.components.plus
 import kotlinx.coroutines.flow.Flow
 
 
 @Composable
 fun MapScreen(
     contentPadding: PaddingValues,
-    viewModel: StationsViewModel,
+    stationsModule: StationsModule,
     mapState: MapState<Station>
 ) {
+    val viewModel = viewModel { stationsModule.stationsViewModel }
     val stationsState by viewModel.state.collectAsState()
-
     MapScreen(
         mapState = mapState,
         stations = stationsState.stations,

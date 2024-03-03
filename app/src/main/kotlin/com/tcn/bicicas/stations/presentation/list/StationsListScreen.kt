@@ -31,10 +31,12 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -52,11 +54,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tcn.bicicas.R
 import com.tcn.bicicas.common.Clock
 import com.tcn.bicicas.main.theme.Theme
+import com.tcn.bicicas.stations.StationsModule
 import com.tcn.bicicas.stations.presentation.StationsState
-import com.tcn.bicicas.stations.presentation.StationsViewModel
 import com.tcn.bicicas.stations.presentation.components.StationItem
 import com.tcn.bicicas.stations.presentation.components.plus
 import com.tcn.bicicas.stations.presentation.stationsState
@@ -71,18 +74,22 @@ import kotlin.time.Duration.Companion.minutes
 
 @Composable
 fun StationScreen(
-    contentPadding: PaddingValues = PaddingValues(),
-    viewModel: StationsViewModel,
-    clock: Clock,
+    contentPadding: PaddingValues,
+    stationsModule: StationsModule,
+    onNavigateToMapClicked: () -> Unit
 ) {
+    val viewModel = viewModel { stationsModule.stationsViewModel }
     val stationsState: StationsState by viewModel.state.collectAsState()
     StationsScreen(
         contentPadding = contentPadding,
         stationsState = stationsState,
-        clock = clock,
+        clock = stationsModule.clock,
         onRefresh = viewModel::onRefresh,
         onFavoriteClicked = viewModel::onFavoriteClicked,
-        onMapClicked = viewModel::onMapClicked,
+        onMapClicked = { stationId ->
+            viewModel.onMapClicked(stationId)
+            onNavigateToMapClicked()
+        },
         onErrorHandled = viewModel::onErrorHandled,
     )
 }
@@ -117,12 +124,15 @@ fun StationsScreen(
     LaunchedEffect(stationsState.isLoading) {
         if (stationsState.isLoading) pullRefreshState.startRefresh() else pullRefreshState.endRefresh()
     }
+    LaunchedEffect(pullRefreshState.isRefreshing) {
+        if (pullRefreshState.isRefreshing) onRefresh()
+    }
     Box(
         Modifier
             .fillMaxSize()
             .nestedScroll(pullRefreshState.nestedScrollConnection)
     ) {
-        if (stationsState.stations.isEmpty()) {
+        if (stationsState.stations.isEmpty() && stationsState.hasLoaded) {
             StationsListEmpty(contentPadding, stationsState.isLoading, onRefresh)
         } else {
             StationsListContent(
@@ -139,9 +149,14 @@ fun StationsScreen(
                 .padding(contentPadding)
                 .align(Alignment.BottomCenter)
         )
+
+        val showRefreshIndicator by remember {
+            derivedStateOf { pullRefreshState.verticalOffset > 1f || pullRefreshState.isRefreshing }
+        }
         PullToRefreshContainer(
             modifier = Modifier.align(Alignment.TopCenter),
             state = pullRefreshState,
+            containerColor = if (showRefreshIndicator) PullToRefreshDefaults.containerColor else Color.Transparent,
         )
     }
 }

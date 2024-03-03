@@ -26,10 +26,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -55,17 +55,20 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tcn.bicicas.BuildConfig
 import com.tcn.bicicas.R
+import com.tcn.bicicas.settings.SettingsModule
 import com.tcn.bicicas.settings.domain.Settings
 
 
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel,
+    module: SettingsModule,
     onBackClicked: () -> Unit,
     onNavigateToLicenses: () -> Unit,
 ) {
+    val viewModel = viewModel { module.settingsViewModel }
     val settings by viewModel.state.collectAsState()
     SettingsScreen(
         settings = settings,
@@ -131,11 +134,11 @@ private fun SettingsList(
         Spacer(modifier = Modifier.height(12.dp))
         ThemeSection(settings, onThemeChanged, onDynamicColorEnabled)
 
-        Divider(modifier = Modifier.fillMaxWidth())
+        HorizontalDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(18.dp))
         NavigationSection(settings, onInitialScreenChanged, onNavigationTypeChanged)
 
-        Divider(modifier = Modifier.fillMaxWidth())
+        HorizontalDivider(modifier = Modifier.fillMaxWidth())
         Spacer(modifier = Modifier.height(18.dp))
         CreditsSection(onLicensesClicked)
 
@@ -377,7 +380,7 @@ private fun SettingsTopAppBar(scrollBehavior: TopAppBarScrollBehavior, onBackCli
         navigationIcon = {
             IconButton(
                 onClick = onBackClicked,
-                content = { Icon(imageVector = Icons.Rounded.ArrowBack, contentDescription = null) }
+                content = { Icon(imageVector = Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = null) }
             )
         },
         title = { Text(text = stringResource(R.string.settings_title)) },

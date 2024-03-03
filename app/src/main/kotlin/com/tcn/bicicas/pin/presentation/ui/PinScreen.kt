@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tcn.bicicas.R
 import com.tcn.bicicas.common.ui.ScrollableAlertDialog
+import com.tcn.bicicas.pin.PinModule
 import com.tcn.bicicas.pin.presentation.PinState
 import com.tcn.bicicas.pin.presentation.PinViewModel
 import kotlinx.coroutines.isActive
@@ -54,10 +55,10 @@ import kotlin.math.roundToInt
 
 @Composable
 fun PinScreen(
-    pinViewModelProvider: () -> PinViewModel,
+    pinModule: PinModule,
     padding: PaddingValues
 ) {
-    val viewModel: PinViewModel = viewModel { pinViewModelProvider() }
+    val viewModel: PinViewModel = viewModel { pinModule.pinViewModel }
     val state by viewModel.state.collectAsState()
     PinScreen(state, padding, viewModel::onLogout, viewModel::onLogin)
 }

@@ -24,6 +24,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -43,35 +44,38 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.tcn.bicicas.R
-import com.tcn.bicicas.common.Clock
 import com.tcn.bicicas.main.theme.Theme
-import com.tcn.bicicas.pin.presentation.PinViewModel
+import com.tcn.bicicas.pin.PinModule
 import com.tcn.bicicas.pin.presentation.ui.PinScreen
+import com.tcn.bicicas.settings.SettingsModule
 import com.tcn.bicicas.settings.domain.Settings
 import com.tcn.bicicas.settings.presentation.LicensesScreen
 import com.tcn.bicicas.settings.presentation.SettingsScreen
-import com.tcn.bicicas.settings.presentation.SettingsViewModel
+import com.tcn.bicicas.stations.StationsModule
 import com.tcn.bicicas.stations.domain.model.Station
-import com.tcn.bicicas.stations.presentation.StationsViewModel
 import com.tcn.bicicas.stations.presentation.list.StationScreen
 import com.tcn.bicicas.stations.presentation.map.MapScreen
 import com.tcn.bicicas.stations.presentation.map.MapState
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.firstOrNull
 
 @Composable
 fun MainScreen(
-    settingsViewModelProvider: () -> SettingsViewModel,
-    pinViewModelProvider: () -> PinViewModel,
-    stationsViewModelProvider: () -> StationsViewModel,
-    clock: Clock,
+    mainModule: MainModule,
+    settingsModule: SettingsModule,
+    pinModule: PinModule,
+    stationsModule: StationsModule,
     mapState: MapState<Station>,
     hideSplashScreen: () -> Unit,
 ) {
 
-    val settingsViewModel: SettingsViewModel = viewModel { settingsViewModelProvider() }
-    val settings by settingsViewModel.state.collectAsState()
+    val viewModel = viewModel { mainModule.mainViewModel }
+    val state by viewModel.state.collectAsState()
+    val settings = state.settings
+
+    SideEffect {
+        if (state.isInitialDataLoaded) hideSplashScreen()
+    }
+
+    if (settings == null || !state.isInitialDataLoaded) return
 
     val darkTheme = settings.theme == Settings.Theme.Dark
             || (settings.theme == Settings.Theme.System && isSystemInDarkTheme())
@@ -88,7 +92,7 @@ fun MainScreen(
     val navigationState = remember { NavigationState(Screen.entries[initialScreen]) }
 
     LaunchedEffect(navigationState.screen) {
-        settingsViewModel.onLastScreenChanged(navigationState.screen.ordinal)
+        viewModel.onLastScreenChanged(navigationState.screen.ordinal)
     }
 
     val navController = rememberNavController()
@@ -101,20 +105,18 @@ fun MainScreen(
             NavHost(navController, startDestination = "main") {
                 composable("main") {
                     MainContent(
-                        stationsViewModelProvider = stationsViewModelProvider,
-                        pinViewModelProvider = pinViewModelProvider,
-                        clock = clock,
+                        stationsModule = stationsModule,
+                        pinModule = pinModule,
                         navigationType = settings.navigationType,
                         navigationState = navigationState,
                         mapState = mapState,
                         onSettingsClick = { navController.navigate("settings") },
-                        hideSplashScreen = hideSplashScreen,
                     )
                 }
 
                 composable("settings") {
                     SettingsScreen(
-                        viewModel = settingsViewModel,
+                        module = settingsModule,
                         onBackClicked = { navController.popBackStack() },
                         onNavigateToLicenses = { navController.navigate("licenses") }
                     )
@@ -141,36 +143,19 @@ private val iconForScreen = { screen: Screen ->
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainContent(
-    stationsViewModelProvider: () -> StationsViewModel,
-    pinViewModelProvider: () -> PinViewModel,
-    clock: Clock,
+    stationsModule: StationsModule,
+    pinModule: PinModule,
     navigationType: Settings.NavigationType,
     navigationState: NavigationState,
     mapState: MapState<Station>,
     onSettingsClick: () -> Unit,
-    hideSplashScreen: () -> Unit,
 ) {
-
-    val stationsViewModel: StationsViewModel = viewModel { stationsViewModelProvider() }
-    LaunchedEffect(Unit) {
-        stationsViewModel.state.filter { state -> state.navigateTo != null }
-            .distinctUntilChanged()
-            .collect { navigationState.navigateTo(Screen.Map) }
-    }
-
-    LaunchedEffect(Unit) {
-        if (navigationState.screen != Screen.List ||
-            stationsViewModel.state.firstOrNull { it.hasLoaded } != null
-        ) {
-            hideSplashScreen()
-        }
-    }
 
     val contentForScreen = @Composable { screen: Screen, padding: PaddingValues ->
         when (screen) {
-            Screen.Pin -> PinScreen(pinViewModelProvider, padding)
-            Screen.List -> StationScreen(padding, stationsViewModel, clock)
-            Screen.Map -> MapScreen(padding, stationsViewModel, mapState)
+            Screen.Pin -> PinScreen(pinModule, padding)
+            Screen.List -> StationScreen(padding, stationsModule) { navigationState.navigateTo(Screen.Map) }
+            Screen.Map -> MapScreen(padding, stationsModule, mapState)
         }
     }
 

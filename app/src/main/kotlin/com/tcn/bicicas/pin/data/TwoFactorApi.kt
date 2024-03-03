@@ -1,13 +1,12 @@
 package com.tcn.bicicas.pin.data
 
+import com.tcn.bicicas.common.result
 import com.tcn.bicicas.pin.domain.model.TwoFactorAuth
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.preparePost
-import io.ktor.client.statement.HttpStatement
-import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -50,11 +49,3 @@ suspend fun HttpClient.getTwoFactorAuth(baseUrl: String, token: String): Result<
         TwoFactorAuth(response.dashboard.twoFactor.user, response.dashboard.twoFactor.secret)
     }
 
-suspend inline fun <reified T, R> HttpStatement.result(
-    crossinline block: suspend (response: T) -> R
-): Result<R> = try {
-    Result.success(body(block))
-} catch (e: Exception) {
-    if (e is CancellationException) throw e
-    Result.failure(e)
-}

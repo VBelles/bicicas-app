@@ -13,10 +13,11 @@ import kotlinx.coroutines.flow.Flow
 
 interface StationsModule {
     val stationsViewModel: StationsViewModel
+    val clock: Clock
 }
 
 class StationsModuleImpl(
-    private val clock: Clock,
+    override val clock: Clock,
     private val storeManager: () -> StoreManager,
     private val httpClient: () -> HttpClient,
     private val stationsBaseUrl: String,

@@ -2,6 +2,9 @@ package com.tcn.bicicas.main
 
 import com.tcn.bicicas.common.Clock
 import com.tcn.bicicas.common.StoreManager
+import com.tcn.bicicas.settings.domain.Settings
+import com.tcn.bicicas.stations.domain.GetStations
+import com.tcn.bicicas.stations.domain.model.StationsData
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngineFactory
 import io.ktor.client.engine.okhttp.OkHttp
@@ -19,6 +22,7 @@ interface MainModule {
     val clock: Clock
     val httpClient: HttpClient
     val storeManager: StoreManager
+    val mainViewModel: MainViewModel
 }
 
 class MainModuleImpl(
@@ -39,6 +43,15 @@ class MainModuleImpl(
             fileSystem = fileSystem,
         )
     }
+
+    override val mainViewModel: MainViewModel
+        get() = MainViewModel(
+            settingsStore = storeManager.getStore(defaultValue = Settings()),
+            getStations = GetStations(
+                stationsStore = storeManager.getStore<StationsData>("stations", StationsData()),
+                favoriteStore = storeManager.getListStore<String>("favorite")
+            )
+        )
 }
 
 fun buildHttpClient(httpEngineFactory: HttpClientEngineFactory<*>) = HttpClient(httpEngineFactory) {

@@ -1,6 +1,6 @@
 package com.tcn.bicicas.stations.data
 
-import com.tcn.bicicas.pin.data.result
+import com.tcn.bicicas.common.result
 import com.tcn.bicicas.stations.domain.model.Station
 import io.ktor.client.HttpClient
 import io.ktor.client.request.prepareGet

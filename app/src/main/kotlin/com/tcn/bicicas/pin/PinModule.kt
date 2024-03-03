@@ -15,7 +15,7 @@ import io.ktor.client.HttpClient
 
 
 interface PinModule {
-    fun providePinViewModel(): PinViewModel
+    val pinViewModel: PinViewModel
 }
 
 class PinModuleImpl(
@@ -26,24 +26,27 @@ class PinModuleImpl(
     private val oauthClientId: String,
     private val oauthClientSecret: String,
 ) : PinModule {
-    override fun providePinViewModel(): PinViewModel {
-        val store: Store<TwoFactorAuth?> = storeManager().getStore()
-        return PinViewModel(
-            getPin = GetPin(store, clock, ::generatePin),
-            login = Login(
-                getAuthentication = { username, password ->
-                    httpClient().authenticate(
-                        baseUrl = oauthBaseUrl,
-                        username = username,
-                        password = password,
-                        clientId = oauthClientId,
-                        clientSecret = oauthClientSecret
-                    )
-                },
-                getTwoFactorAuth = { token -> httpClient().getTwoFactorAuth(oauthBaseUrl, token) },
-                store = store
-            ),
-            logout = Logout(store),
-        )
-    }
+
+    override val pinViewModel: PinViewModel
+        get() {
+            val store: Store<TwoFactorAuth?> = storeManager().getStore()
+            return PinViewModel(
+                getPin = GetPin(store, clock, ::generatePin),
+                login = Login(
+                    getAuthentication = { username, password ->
+                        httpClient().authenticate(
+                            baseUrl = oauthBaseUrl,
+                            username = username,
+                            password = password,
+                            clientId = oauthClientId,
+                            clientSecret = oauthClientSecret
+                        )
+                    },
+                    getTwoFactorAuth = { token -> httpClient().getTwoFactorAuth(oauthBaseUrl, token) },
+                    store = store
+                ),
+                logout = Logout(store),
+            )
+        }
+
 }

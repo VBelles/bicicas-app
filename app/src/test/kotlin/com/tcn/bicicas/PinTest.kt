@@ -59,7 +59,7 @@ class PinTest {
 
     @Test
     fun when_login_is_performed_then_state_is_loading() = runTest {
-        val viewModel: PinViewModel = pinModule().providePinViewModel()
+        val viewModel: PinViewModel = pinModule().pinViewModel
         viewModel.state.test {
             awaitItem() // Initial empty state
             viewModel.onLogin("user", "pass")
@@ -71,7 +71,7 @@ class PinTest {
 
     @Test
     fun when_success_login_is_performed_then_state_is_success() = runTest {
-        val viewModel: PinViewModel = pinModule().providePinViewModel()
+        val viewModel: PinViewModel = pinModule().pinViewModel
         viewModel.state.test {
             awaitItem() // Initial empty state
             viewModel.onLogin("user", "pass")
@@ -84,12 +84,12 @@ class PinTest {
 
     @Test
     fun when_login_is_performed_with_wrong_credentials_then_state_has_error() = runTest {
-        val viewModel: PinViewModel = pinModule().providePinViewModel()
+        val viewModel: PinViewModel = pinModule().pinViewModel
         viewModel.state.test {
             awaitItem() // Initial empty state
             viewModel.onLogin("user", "wrongpass")
             val state = (awaitItem() as PinState.LoggedOut).takeIf { it.loginError != null }
-                ?:awaitItem() as PinState.LoggedOut
+                ?: awaitItem() as PinState.LoggedOut
             assertEquals(PinState.LoginError.WrongUserPass, state.loginError)
             cancelAndIgnoreRemainingEvents()
         }
@@ -97,7 +97,7 @@ class PinTest {
 
     @Test
     fun when_success_login_then_pin_progress_is_refreshed_automatically() = runTest {
-        val viewModel: PinViewModel = pinModule { currentTime }.providePinViewModel()
+        val viewModel: PinViewModel = pinModule { currentTime }.pinViewModel
         viewModel.state.test {
             awaitItem() // Initial empty state
             viewModel.onLogin("user", "pass")
@@ -124,7 +124,7 @@ class PinTest {
 
     @Test
     fun when_logout_is_performed_then_pin_state_is_not_refreshed() = runTest {
-        val viewModel = pinModule().providePinViewModel()
+        val viewModel = pinModule().pinViewModel
         viewModel.state.test {
             awaitItem() // Initial empty state
             viewModel.onLogin("user", "pass")

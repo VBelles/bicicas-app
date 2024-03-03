@@ -13,34 +13,33 @@ import org.jasypt.util.text.BasicTextEncryptor
 
 suspend fun legacyMigration(
     context: Context,
-    favoritesStore: Store<List<String>>,
-    settingsStore: Store<Settings>,
-    authStore: Store<TwoFactorAuth?>,
-    password: CharArray,
+    storeManager: StoreManager,
+    password: String,
 ) = coroutineScope {
     val preferences = context.getSharedPreferences("prefs", Context.MODE_PRIVATE)
     awaitAll(
-        async { legacyFavoriteStationsMigration(preferences, favoritesStore) },
-        async { legacySettingsMigration(preferences, settingsStore) },
-        async { legacyTwoFactorAuthMigration(preferences, authStore, password) },
+        async { legacyFavoriteStationsMigration(preferences, storeManager.getListStore("favorite")) },
+        async { legacySettingsMigration(preferences, storeManager.getStore(defaultValue = Settings())) },
+        async { legacyTwoFactorAuthMigration(preferences, storeManager.getStore(), password) },
     )
     migrationCleanup(preferences)
 }
 
-suspend fun legacyFavoriteStationsMigration(
+private suspend fun legacyFavoriteStationsMigration(
     preferences: SharedPreferences,
     store: Store<List<String>>
-) {
-    val favorites = preferences.getStringSet("favorites", null) ?: return
+) = runCatching {
+    val favorites = preferences.getStringSet("favorites", null)
+    if (favorites.isNullOrEmpty()) return@runCatching
     store.update { favorites.toList() }
     preferences.edit { remove("favorites") }
 }
 
-suspend fun legacySettingsMigration(
+private suspend fun legacySettingsMigration(
     preferences: SharedPreferences,
     store: Store<Settings>,
-) {
-    if (!preferences.contains(KEY_INITIAL_SCREEN)) return
+) = runCatching {
+    if (!preferences.contains(KEY_INITIAL_SCREEN)) return@runCatching
     val settings = Settings()
     val previousSettings = Settings(
         initialScreen = preferences.getEnum(KEY_INITIAL_SCREEN, settings.initialScreen),
@@ -54,23 +53,23 @@ suspend fun legacySettingsMigration(
     store.update { previousSettings }
 }
 
-suspend fun legacyTwoFactorAuthMigration(
+private suspend fun legacyTwoFactorAuthMigration(
     preferences: SharedPreferences,
     store: Store<TwoFactorAuth?>,
-    password: CharArray,
-) {
-    if (!preferences.contains(KEY_USER)) return
-    val encryptor = BasicTextEncryptor().apply { setPasswordCharArray(password) }
+    password: String,
+) = runCatching {
+    if (!preferences.contains(KEY_USER)) return@runCatching
+    val encryptor = BasicTextEncryptor().apply { setPassword(password) }
     val twoFactorAuth = runCatching {
         TwoFactorAuth(
             user = preferences.getString(KEY_USER, null)?.let(encryptor::decrypt)!!,
             secret = preferences.getString(KEY_SECRET, null)?.let(encryptor::decrypt)!!
         )
-    }.getOrNull() ?: return
+    }.getOrNull() ?: return@runCatching
     store.update { twoFactorAuth }
 }
 
-fun migrationCleanup(preferences: SharedPreferences) {
+private fun migrationCleanup(preferences: SharedPreferences) {
     preferences.edit { clear() }
 }
 
